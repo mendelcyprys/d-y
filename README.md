@@ -63,6 +63,12 @@ The schedule has been checked against Sefaria's calendar at the first and
 last daf of every tractate in the current cycle (cycle 14, 5 January 2020 to
 7 June 2027).
 
+## Research notes
+
+`research/` holds questions examined while learning, such as a difficult Rashi or a
+contradiction between sources. Each note quotes its sources exactly. They are not
+part of the app; see [`research/README.md`](research/README.md) for the index.
+
 ## Development
 
 ```bash
