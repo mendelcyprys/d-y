@@ -17,6 +17,7 @@ Listed in the order of the Shas.
 | --- | --- | --- | --- | --- |
 | Arakhin 2a | question (2) | Does every "הכל" come to include something? (נודרין: "נידרין איצטריך ליה"; נידרין: "תני והדר מפרש"; 3b's "פשיטא!" as the mirror image.) Is "הכל" a literary heading that the Mishnah then spells out? (the "הכל... חוץ מ..." pattern; Mishnat Eretz Yisrael; Bar-Ilan) | answered | [arakhin-2a-does-hakol-include.md](arakhin-2a-does-hakol-include.md) |
 | Arakhin 3a | question (5) | The kohen who isn't expert in nega'im: Rashi's wording, the Sifra's "shoteh", how the Rambam learns Ravina | answered | [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md) |
+| Arakhin 3b | question (1) | "הכל מעלין לארץ ישראל — לאתויי עבדים": Rashi here (the slave compels, only when he is being sold) against Rashi in Kesubos (the master compels a Hebrew slave); Ri and the Rambam | answered | [arakhin-3b-hakol-maalin-avadim.md](arakhin-3b-hakol-maalin-avadim.md) |
 
 Status is one of:
 - `open`
