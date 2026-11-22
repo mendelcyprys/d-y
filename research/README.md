@@ -15,7 +15,7 @@ Listed in the order of the Shas.
 
 | Daf | Kind | Topic | Status | File |
 | --- | --- | --- | --- | --- |
-| Arakhin 2a | question (1) | Does every "הכל" come to include something? (נודרין: "נידרין איצטריך ליה"; נידרין: "תני והדר מפרש"; 3b's "פשיטא!" as the mirror image) | answered | [arakhin-2a-does-hakol-include.md](arakhin-2a-does-hakol-include.md) |
+| Arakhin 2a | question (2) | Does every "הכל" come to include something? (נודרין: "נידרין איצטריך ליה"; נידרין: "תני והדר מפרש"; 3b's "פשיטא!" as the mirror image.) Is "הכל" a literary heading that the Mishnah then spells out? (the "הכל... חוץ מ..." pattern; Mishnat Eretz Yisrael; Bar-Ilan) | answered | [arakhin-2a-does-hakol-include.md](arakhin-2a-does-hakol-include.md) |
 | Arakhin 3a | question (5) | The kohen who isn't expert in nega'im: Rashi's wording, the Sifra's "shoteh", how the Rambam learns Ravina | answered | [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md) |
 
 Status is one of:

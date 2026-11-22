@@ -94,6 +94,18 @@ the kohen must understand. But the Sifra allows even a shoteh.
    - **Mizrachi**, Vayikra 13:2. He distinguishes **רואה**, who must be expert,
      from **אומר**: "וסומך הכהן על בקיאותו של חכם... ולפיכך אפילו אם היה שוטה שפיר דמי".
 
+**Rashi in context.** The Vilna edition prints Rashi's two comments separately:
+- "שאינו בקי – והולך ת"ח..." on "לאתויי שאינו בקי" (3a:12);
+- "דמסברי ליה וסבר – הלכות נגעים" on Ravina (3a:13).
+
+Tosafos quotes them as one comment under "דמסברי ליה וסבר": "הלכות נגעים.
+שאינו בקי והולך ת"ח ורואה עמו הוא אומר טמא והוא אומר טמא... והכי תניא ליה
+בת"כ". Read that way, Rashi is not setting a separate requirement that conflicts
+with the Sifra. He identifies Ravina's "מסברי ליה וסבר" with the Sifra's own
+case, the non-expert kohen with a chacham at his side, and cites the Sifra for
+it. The only tension left is the word "וסבר", and that is exactly what Tosafos
+raises.
+
 **The Rash MiShantz** on Negaim 3:1 quotes both texts in one comment:
 "לאתויי שאינו בקי בהן ובשמותיהן והוא דמסברו ליה וסבר כדמפרש בריש ערכין, והא
 דאמר' בפ"ק דשבועות... היינו בפני עצמו אבל חכם עמו רואה... ואע"פ שהוא שוטה".

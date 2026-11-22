@@ -75,6 +75,59 @@ already explicit:
 and answers that it includes nothing, for example Chullin 2a on "הכל שוחטין".
 I also did not look for a Rishon who states the rule in general terms.
 
+## 2. Is "הכל" in our Mishnah just a literary device, explained by what follows? (2026-11-22)
+
+Looking at the Mishnah, "הכל" reads like a heading. The Mishnah then spells out
+what it covers: first "כהנים, לוים וישראלים, נשים ועבדים", then the edge cases
+of tumtum and androgynos, cheresh, shoteh and katan, and a baby under a month.
+
+**Answer.** That reading has good support. The Gemara knows it too, but uses it
+only where it has no better option.
+
+- **The Gemara uses it once.** On נידרין it answers "תני והדר מפרש" (see the
+  texts above). That is exactly heading-then-detail, though there the "detail"
+  is the later clause about a baby under a month. In Rashi's first reading it
+  makes "הכל" add nothing. On נודרין the Gemara goes further: "הכל" is there
+  only for the sake of the next verb.
+- **"הכל" mishnayos usually work this way.** "הכל" sets up a default so that
+  the exceptions can then be listed. Examples (Torat Emet):
+  - Chagigah 1:1: "הכל חיבין בראיה, חוץ מחרש, שוטה וקטן, וטמטום, ואנדרוגינוס, ונשים, ועבדים שאינם משחררים..."
+  - Chullin 1:1: "הכל שוחטין ושחיטתן כשרה, חוץ מחרש, שוטה, וקטן..."
+  - Parah 5:4: "הכל כשרים לקדש, חוץ מחרש שוטה וקטן"
+  - Negaim 3:1: "הכל מטמאין בנגעים, חוץ מן הנכרים וגר תושב"
+
+  Our Mishnah has the same shape. Its "exceptions" are partial: tumtum and
+  androgynos are not נערכין, and cheresh, shoteh and katan are not נודרין or
+  מעריכין.
+- **Mishnat Eretz Yisrael** on this Mishnah (Kvutsat Yavne, 2020–21, a modern
+  academic commentary) makes exactly this point:
+  > כהנים ולוים וישראל נשים ועבדים – כל אלו הם בכלל "הכל". הגמרא (בבלי, ב ע"א) בדרכה שואלת לשם מה הניסוח הכפול, הרי "הכל" מרבה ואין צורך בפירוט. ברם השאלה אינה קושיה חריפה אלא רק דרך ספרותית של הגמרא לחפש תשובה למקרים מיוחדים. זה דרכן של משניות, ואין לתמוה על כך. עם זאת, נכון הוא שבדרך כלל אחרי "הכל" באה רשימת היוצאים מהכלל, ולעתים קרובות חירש, שוטה וקטן הם בבחינת היוצאים מהכלל, כמו אצלנו.
+
+  It also reports Meir Bar-Ilan's view that mishnayos opening "הכל" are mainly
+  a polemical formulation. On that view the Sages are stressing that all Israel
+  share in the service of God, against the kohanim's claim to a monopoly. One
+  example is Yoma 6:3, "הכל כשרין להוליכו. אלא שעשו הכהנים קבע ולא היו
+  מניחין את ישראל להוליכו". Mishnat Eretz Yisrael itself notes that some
+  "הכל" mishnayos have nothing to do with kohanim, such as Chullin 1:1 and
+  Megillah 2:4. This would fit our Mishnah's "כהנים, לוים וישראלים", and the
+  Gemara's repeated answer on 3b, "כהנים איצטריכא ליה". I have not read
+  Bar-Ilan himself; this is his view as Mishnat Eretz Yisrael reports it.
+
+**What the Gemara's reading adds.** By asking "לאתויי מאי", the Gemara draws
+out cases the Mishnah does not list. Some of them are real halachic points:
+- the *mufla samuch le'ish*;
+- the disfigured man with no market value, who still has an *erech* ("נפשת כל
+  דהו").
+
+Bartenura, the Rambam, the Tosafos Yom Tov and Yachin all follow the Gemara
+here, and the Rambam rules these cases as halachah. So the two readings are not
+in conflict. One describes how the Mishnah is written. The other is the
+Gemara's way of finding more halachah in its words. The Gemara drops back to
+the plain reading only where nothing new can be found (נודרין, נידרין).
+
+**Not checked.** Bar-Ilan's own work, and whether any traditional commentator
+states the literary reading in general terms.
+
 ## Related
 
 - [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md): one of
