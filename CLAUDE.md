@@ -11,3 +11,5 @@ Run with `npm start` (python http.server on :8000). Test with `npm test` (node:t
 - Sefaria texts are untrusted HTML: always render them through `textToFragment` in `src/sanitize.js`, never `innerHTML`.
 - Sefaria's calendar only lists Daf Yomi for cycle 14, so calendar lookups use the matching cycle-14 date.
 - Sefaria rate-limits (HTTP 429); avoid bursts of requests.
+- Rashi ("Rashi on Arakhin 5") is split into the same passages as the Gemara: comment list n on 5a belongs to passage n of
+  5a. Bava Batra adds "Rashbam on Bava Batra"; Shekalim, Kinnim, Tamid and Middot have no Rashi.

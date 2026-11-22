@@ -7,7 +7,7 @@
 
 import * as S from './schedule.js';
 import * as P from './progress.js';
-import { loadDaf, sefariaUrl } from './sefaria.js';
+import { loadDaf, loadRashi, hasRashi, splitDibbur, COMMENTATORS, sefariaUrl } from './sefaria.js';
 import { textToFragment } from './sanitize.js';
 import { loadState, saveState, storageAvailable } from './store.js';
 
@@ -406,10 +406,71 @@ function amudLabelHe(label) {
 
 function textCard(index) {
   const settings = state.settings;
-  const body = h('div', { class: 'text-body', 'data-layout': settings.layout, style: { '--scale': settings.fontScale } },
-    h('p', { class: 'loading' }, 'Loading the text from Sefaria…'),
-  );
+  const { tractate } = S.dafAtIndex(index);
+  const body = h('div', {
+    class: 'text-body',
+    'data-layout': settings.layout,
+    'data-rashi': settings.rashi ? 'on' : 'off',
+    style: { '--scale': settings.fontScale },
+  }, h('p', { class: 'loading' }, 'Loading the text from Sefaria…'));
   const credits = h('p', { class: 'credits small' });
+  const rashiCredit = h('span');
+  const rashiNote = h('p', { class: 'rashi-note small', hidden: true });
+
+  // Rashi is loaded only when it's switched on, and only once the Gemara is
+  // on the page, then slotted in beside each passage.
+  let gemaraShown = false;
+  let rashiStatus = 'idle'; // idle | loading | done | none
+
+  function setRashiNote(...content) {
+    rashiNote.replaceChildren(...content);
+    rashiNote.hidden = !content.length || !settings.rashi;
+  }
+
+  async function showRashi() {
+    if (!settings.rashi || !gemaraShown || rashiStatus !== 'idle') return;
+    if (!hasRashi(tractate)) {
+      rashiStatus = 'none';
+      setRashiNote(`There's no Rashi on ${tractate.en}.`);
+      return;
+    }
+    rashiStatus = 'loading';
+    setRashiNote('Loading Rashi…');
+    try {
+      const rashi = await loadRashi(index);
+      if (!rashi) {
+        rashiStatus = 'none';
+        setRashiNote("There's no Rashi on this daf.");
+        return;
+      }
+      for (const slot of body.querySelectorAll('.rashi[data-amud]')) {
+        const passages = rashi.byAmud[slot.dataset.amud] || [];
+        const comments = slot.dataset.seg === 'all' ? passages.flat() : passages[Number(slot.dataset.seg)] || [];
+        if (comments.length) slot.replaceChildren(...rashiView(comments));
+      }
+      rashiStatus = 'done';
+      setRashiNote();
+      rashiCredit.textContent = ` ${rashi.authors.join(' and ')}: ${rashi.versions.join(', ')}.`;
+    } catch (error) {
+      rashiStatus = 'idle';
+      setRashiNote(`Couldn't load Rashi: ${error.message}. `,
+        h('button', { type: 'button', class: 'link-button', onclick: showRashi }, 'Try again'));
+    }
+  }
+
+  const rashiButton = h('button', {
+    type: 'button',
+    'aria-pressed': settings.rashi ? 'true' : 'false',
+    title: 'Show Rashi beside the Gemara',
+    onclick: () => {
+      settings.rashi = !settings.rashi;
+      persist();
+      body.dataset.rashi = settings.rashi ? 'on' : 'off';
+      rashiButton.setAttribute('aria-pressed', String(settings.rashi));
+      rashiNote.hidden = !settings.rashi || !rashiNote.childNodes.length;
+      showRashi();
+    },
+  }, 'Rashi');
 
   const layoutButtons = [
     ['both', 'Both'],
@@ -448,6 +509,8 @@ function textCard(index) {
     try {
       const text = await loadDaf(index);
       body.replaceChildren(...text.sections.map(sectionView));
+      gemaraShown = true;
+      showRashi();
       const { he, en } = text.versions;
       credits.replaceChildren(
         'Text from ', h('a', { href: sefariaUrl(text.ref), target: '_blank', rel: 'noopener noreferrer' }, 'Sefaria'),
@@ -455,6 +518,7 @@ function textCard(index) {
         en ? `; ${en.title}${en.license ? ` (${en.license})` : ''}` : '',
         '.',
       );
+      credits.append(rashiCredit);
       if (en?.title?.startsWith('William Davidson')) {
         credits.append(' In the English, ', h('b', {}, 'bold'), ' is a literal translation and plain text is explanation, following Rabbi Adin Even-Israel Steinsaltz.');
       }
@@ -474,11 +538,13 @@ function textCard(index) {
     h('div', { class: 'text-toolbar' },
       h('h2', { id: 'text-title' }, 'Text'),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Language' }, layoutButtons),
+      h('div', { class: 'segmented' }, rashiButton),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Text size' },
         h('button', { type: 'button', onclick: resize(-0.1), 'aria-label': 'Smaller text' }, 'A−'),
         h('button', { type: 'button', onclick: resize(0.1), 'aria-label': 'Larger text' }, 'A+'),
       ),
     ),
+    rashiNote,
     body,
     credits,
   );
@@ -494,19 +560,42 @@ function sectionView(section) {
 
   // When both languages have the same number of passages, line them up side
   // by side; otherwise show each language as one block.
+  // Each row also has an empty slot that Rashi's comments on that passage
+  // are put into once they load.
+  const rashiSlot = (seg) => h('div', { class: 'rashi', lang: 'he', dir: 'rtl', 'data-amud': section.label, 'data-seg': seg });
   let rows;
   if (section.he.length === section.en.length) {
     rows = section.he.map((heText, i) => (heText || section.en[i]
       ? h('div', { class: 'seg-row' },
         h('div', { class: 'he' }, para(heText, 'he')),
-        h('div', { class: 'en' }, para(section.en[i], 'en')))
+        h('div', { class: 'en' }, para(section.en[i], 'en')),
+        rashiSlot(String(i)))
       : null));
   } else {
     rows = [h('div', { class: 'seg-row' },
       h('div', { class: 'he' }, section.he.map((t) => para(t, 'he'))),
-      h('div', { class: 'en' }, section.en.map((t) => para(t, 'en'))))];
+      h('div', { class: 'en' }, section.en.map((t) => para(t, 'en'))),
+      rashiSlot('all'))];
   }
   return h('section', { class: 'amud-section' }, heading, rows);
+}
+
+// Rashi's comments on one passage, each starting with the words of the
+// Gemara it explains (the dibbur hamatchil) in bold.
+function rashiView(comments) {
+  const out = [];
+  let author = null;
+  for (const comment of comments) {
+    if (comment.author !== author) {
+      author = comment.author;
+      out.push(h('span', { class: 'rashi-label' }, COMMENTATORS[author]?.he || author));
+    }
+    const { dibbur, rest } = splitDibbur(comment.text);
+    out.push(h('p', { class: 'rashi-comment' },
+      dibbur ? [h('b', {}, textToFragment(dibbur)), ' '] : null,
+      textToFragment(rest)));
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------

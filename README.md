@@ -17,6 +17,10 @@ behind.
   side by side or one at a time. The English is the William Davidson
   edition, based on Rabbi Steinsaltz: **bold** is the literal translation and
   plain text is explanation. The text comes from [Sefaria](https://www.sefaria.org).
+- **Rashi beside the Gemara.** Each passage has Rashi's comments on it next to
+  it (or under it on a phone), with the opening words in bold. In Bava Batra
+  the Rashbam takes over, as in a printed Gemara. Switch it off with the
+  Rashi button.
 - **Notes on every daf.** They save as you type. The Notes page collects them
   all in the order of the Shas, with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a
@@ -54,7 +58,7 @@ phone, use "Add to Home Screen" to open it like an app.
 | --- | --- |
 | `src/schedule.js` | The Daf Yomi calendar: which daf falls on which date, for any cycle since 1975. Each daf has an *index*, the number of days since cycle 8 began, which makes "where I am" easy to compare with "where the schedule is". |
 | `src/progress.js` | Your record: where you started, what you've learned and when, notes, streaks, review and catch-up plans. It has no browser code, so it can be tested in Node. |
-| `src/sefaria.js` | Loads a daf's text from Sefaria's free API. Shekalim (from the Yerushalmi), Kinnim and Middot are looked up through Sefaria's Daf Yomi calendar. |
+| `src/sefaria.js` | Loads a daf's text, and Rashi, from Sefaria's free API. Shekalim (from the Yerushalmi), Kinnim and Middot are looked up through Sefaria's Daf Yomi calendar. Sefaria splits Rashi into the same passages as the Gemara, which is how each comment is placed beside its passage. |
 | `src/sanitize.js` | Rebuilds Sefaria's formatting (bold, footnotes, links) from an allowlist, so the text can't run anything on the page. |
 | `src/store.js` | Saves to `localStorage`. |
 | `src/app.js` | The pages and everything you click. |

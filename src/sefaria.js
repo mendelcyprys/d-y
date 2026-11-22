@@ -24,7 +24,11 @@ async function getJSON(url, attempt = 0) {
     await wait(2000 * (attempt + 1));
     return getJSON(url, attempt + 1);
   }
-  if (!res.ok) throw new Error(`Sefaria answered ${res.status} ${res.statusText}`.trim());
+  if (!res.ok) {
+    const error = new Error(`Sefaria answered ${res.status} ${res.statusText}`.trim());
+    error.status = res.status;
+    throw error;
+  }
   return res.json();
 }
 
@@ -98,4 +102,118 @@ export function loadDaf(index) {
     promise.catch(() => cache.delete(index)); // let a retry try again
   }
   return cache.get(index);
+}
+
+// ---------------------------------------------------------------------------
+// Rashi
+//
+// Sefaria splits Rashi into the same passages as the Gemara, so comment
+// number n on 5a explains passage n of 5a. Rashi covers almost all of the
+// Bavli; in Bava Batra his grandson the Rashbam takes over partway through
+// 29a. Shekalim (Yerushalmi), Kinnim, Tamid and Middot have no Rashi.
+
+export const COMMENTATORS = {
+  Rashi: { he: 'רש״י' },
+  Rashbam: { he: 'רשב״ם' },
+};
+const COMMENTARY_FOR = { 'Bava Batra': ['Rashi', 'Rashbam'] };
+const NO_RASHI = new Set(['Shekalim', 'Kinnim', 'Tamid', 'Middot']);
+
+export function hasRashi(tractate) {
+  return !NO_RASHI.has(tractate.en);
+}
+
+/** Depth of nested lists down to the first string ("a" = 0, ["a"] = 1, ...). */
+function depthOf(x) {
+  if (!Array.isArray(x)) return 0;
+  for (const item of x) {
+    const d = depthOf(item);
+    if (d > 0 || typeof item === 'string') return d + 1;
+  }
+  return 1;
+}
+
+/**
+ * Reshape a commentary on a daf (or a single amud) into
+ *   [{ label: '5a', passages: [[comment, ...], ...] }]
+ * where passages[n] holds the comments on passage n of the Gemara.
+ */
+export function normalizeCommentary(data) {
+  const version = (data.versions || []).find((v) => v.language === 'he') || (data.versions || [])[0];
+  if (!version) return [];
+  const title = data.book || data.indexTitle || '';
+  const shortLabel = (ref) => (title && ref.startsWith(`${title} `) ? ref.slice(title.length + 1) : ref);
+  const text = version.text || [];
+  const amudim = depthOf(text) >= 3 ? text : [text];
+  const labels = depthOf(text) >= 3 ? data.spanningRefs || [] : [data.ref];
+  return amudim.map((passages, i) => ({
+    label: shortLabel(labels[i] || ''),
+    passages: (passages || []).map((comments) => (Array.isArray(comments) ? comments.filter(Boolean) : [comments].filter(Boolean))),
+  }));
+}
+
+/**
+ * Put several commentaries together, amud by amud and passage by passage:
+ *   { '5a': [[{ author: 'Rashi', text }, ...], ...], ... }
+ */
+export function mergeCommentaries(list) {
+  const byAmud = {};
+  for (const { author, amudim } of list) {
+    for (const { label, passages } of amudim) {
+      byAmud[label] ??= [];
+      passages.forEach((comments, n) => {
+        byAmud[label][n] ??= [];
+        for (const text of comments) byAmud[label][n].push({ author, text });
+      });
+    }
+  }
+  return byAmud;
+}
+
+/**
+ * Split a comment into its opening words (the dibbur hamatchil, the words of
+ * the Gemara being explained) and the explanation, which Sefaria's Vilna
+ * text separates with " - ".
+ */
+export function splitDibbur(text) {
+  const at = text.indexOf(' - ');
+  if (at <= 0 || at > 200) return { dibbur: '', rest: text };
+  return { dibbur: text.slice(0, at), rest: text.slice(at + 3) };
+}
+
+const rashiCache = new Map();
+
+/**
+ * Load Rashi (and Rashbam, in Bava Batra) for the daf at an index.
+ * Resolves to { byAmud, authors, versions } or null when there is none.
+ */
+export function loadRashi(index) {
+  if (!rashiCache.has(index)) {
+    const promise = (async () => {
+      const { tractate, daf } = dafAtIndex(index);
+      if (!hasRashi(tractate)) return null;
+      const found = [];
+      for (const author of COMMENTARY_FOR[tractate.en] || ['Rashi']) {
+        try {
+          const data = await getJSON(
+            `${API}/v3/texts/${encodeURIComponent(`${author} on ${tractate.en} ${daf}`)}?version=source`,
+          );
+          const version = (data.versions || [])[0];
+          found.push({ author, amudim: normalizeCommentary(data), version: version?.versionTitle });
+        } catch (error) {
+          if (error.status !== 404) throw error; // 404: this commentator has nothing on this daf
+        }
+      }
+      const total = found.reduce((n, f) => n + f.amudim.reduce((m, a) => m + a.passages.flat().length, 0), 0);
+      if (!total) return null;
+      return {
+        byAmud: mergeCommentaries(found),
+        authors: found.map((f) => f.author),
+        versions: [...new Set(found.map((f) => f.version).filter(Boolean))],
+      };
+    })();
+    rashiCache.set(index, promise);
+    promise.catch(() => rashiCache.delete(index));
+  }
+  return rashiCache.get(index);
 }

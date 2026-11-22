@@ -286,10 +286,49 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 
 .text-body[data-layout="he"] .en, .text-body[data-layout="en"] .he { display: none; }
 
+/* On narrow screens: Gemara, then English, then Rashi, one under another.
+   With room, columns left to right: English, Gemara, Rashi, so Rashi always
+   sits on the Gemara's right. */
 @container (min-width: 640px) {
   .text-body[data-layout="both"] .seg-row { grid-template-columns: 1fr 1fr; }
+  .text-body[data-layout="both"] .seg-row .en { order: 1; }
   .text-body[data-layout="both"] .seg-row .he { order: 2; }
+  .text-body[data-layout="both"] .seg-row .rashi { order: 3; }
+  .text-body[data-layout="both"][data-rashi="on"] .seg-row .rashi { grid-column: 1 / -1; }
+  .text-body[data-layout="he"][data-rashi="on"] .seg-row,
+  .text-body[data-layout="en"][data-rashi="on"] .seg-row { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); }
 }
+
+@container (min-width: 760px) {
+  .text-body[data-layout="both"][data-rashi="on"] .seg-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .85fr); }
+  .text-body[data-layout="both"][data-rashi="on"] .seg-row .rashi { grid-column: auto; }
+}
+
+/* Rashi */
+.text-body[data-rashi="off"] .rashi { display: none; }
+.rashi:empty { display: none; }
+.rashi {
+  align-self: start;
+  padding: .5rem .75rem;
+  border-right: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-family: var(--font-he);
+  font-size: 1.06em;
+  line-height: 1.6;
+  text-align: justify;
+}
+.rashi-label {
+  display: block;
+  margin-bottom: .15rem;
+  font-size: .8em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.rashi-comment { margin: 0 0 .4rem; }
+.rashi-comment:last-child { margin-bottom: 0; }
+.rashi-comment b { font-weight: 700; }
+.rashi-note { margin: 0 0 .5rem; }
 
 .fn-marker {
   padding: 0 .2em;
