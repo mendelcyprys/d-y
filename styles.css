@@ -306,17 +306,77 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 .amud-section + .amud-section { margin-top: 1.5rem; }
 .amud {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .75rem;
   margin: 1rem 0 .5rem;
-  padding-bottom: .35rem;
+  padding-bottom: .4rem;
   border-bottom: 1px solid var(--line);
-  font-size: 1rem;
-  color: var(--accent);
 }
-.amud .he { font-size: 1.25rem; }
+.amud h3 { margin: 0; font-size: 1rem; color: var(--accent); }
+.amud-he { margin-left: auto; font-size: 1.25rem; color: var(--accent); }
+.amud-progress:empty { display: none; }
+.amud-read-btn {
+  padding: .2rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.amud-read-btn:hover { border-color: var(--learned); color: var(--learned); }
 
-.seg-row { display: grid; gap: .35rem 1.5rem; padding: .65rem 0; border-bottom: 1px dashed var(--line); }
+.reading-summary { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; margin: 0 0 .5rem; }
+.reading-summary .bar { flex: 0 0 6rem; height: 6px; }
+.reading-summary[hidden] { display: none; }
+
+/* A passage: its read mark, then the text. On narrow screens the mark sits
+   at the end of the passage; with more room, in a gutter on the left. */
+.seg-row { display: grid; gap: .5rem; padding: .65rem 0; border-bottom: 1px dashed var(--line); }
+.seg-content { display: grid; gap: .35rem 1.5rem; min-width: 0; }
+
+.seg-mark { order: 2; display: flex; flex-direction: row-reverse; align-items: center; gap: .4rem; }
+@container (min-width: 520px) {
+  .seg-row { grid-template-columns: 2rem minmax(0, 1fr); gap: 0 .6rem; }
+  .seg-mark { order: 0; flex-direction: column; justify-content: flex-start; padding-top: .25rem; }
+}
+
+.read-btn {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--muted) 45%, var(--surface));
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--surface);
+  font: 700 .7rem/1 var(--font-ui);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.read-btn:hover { border-color: var(--learned); }
+.seg-mark.is-read .read-btn { background: var(--learned); border-color: var(--learned); }
+.unread-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font: 600 1rem/1 var(--font-ui);
+  cursor: pointer;
+  opacity: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.unread-btn[hidden] { display: none; }
+.unread-btn:hover { color: var(--danger); }
+.seg-row:hover .unread-btn, .seg-mark:focus-within .unread-btn { opacity: 1; }
+@media (hover: none) { .unread-btn { opacity: .7; } }
 .seg-row:last-child { border-bottom: 0; }
 .seg-row p { margin: 0 0 .5rem; }
 .seg-row p:last-child { margin-bottom: 0; }
@@ -330,19 +390,19 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 /* On narrow screens: Gemara, then English, then Rashi, one under another.
    With room, columns left to right: English, Gemara, Rashi, so Rashi always
    sits on the Gemara's right. */
-@container (min-width: 640px) {
-  .text-body[data-layout="both"] .seg-row { grid-template-columns: 1fr 1fr; }
-  .text-body[data-layout="both"] .seg-row .en { order: 1; }
-  .text-body[data-layout="both"] .seg-row .he { order: 2; }
-  .text-body[data-layout="both"] .seg-row .rashi { order: 3; }
-  .text-body[data-layout="both"][data-rashi="on"] .seg-row .rashi { grid-column: 1 / -1; }
-  .text-body[data-layout="he"][data-rashi="on"] .seg-row,
-  .text-body[data-layout="en"][data-rashi="on"] .seg-row { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); }
+@container (min-width: 680px) {
+  .text-body[data-layout="both"] .seg-content { grid-template-columns: 1fr 1fr; }
+  .text-body[data-layout="both"] .seg-content .en { order: 1; }
+  .text-body[data-layout="both"] .seg-content .he { order: 2; }
+  .text-body[data-layout="both"] .seg-content .rashi { order: 3; }
+  .text-body[data-layout="both"][data-rashi="on"] .seg-content .rashi { grid-column: 1 / -1; }
+  .text-body[data-layout="he"][data-rashi="on"] .seg-content,
+  .text-body[data-layout="en"][data-rashi="on"] .seg-content { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); }
 }
 
-@container (min-width: 760px) {
-  .text-body[data-layout="both"][data-rashi="on"] .seg-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .85fr); }
-  .text-body[data-layout="both"][data-rashi="on"] .seg-row .rashi { grid-column: auto; }
+@container (min-width: 800px) {
+  .text-body[data-layout="both"][data-rashi="on"] .seg-content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .85fr); }
+  .text-body[data-layout="both"][data-rashi="on"] .seg-content .rashi { grid-column: auto; }
 }
 
 /* Rashi */
@@ -503,6 +563,18 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   z-index: 20;
 }
 .toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast.has-action { pointer-events: auto; }
+.toast-action {
+  margin-left: .5rem;
+  padding: .3rem .75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
 .toast .he, .toast [lang="he"] { font-family: var(--font-he); }
 
 @media (prefers-reduced-motion: reduce) {

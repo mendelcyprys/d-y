@@ -25,6 +25,11 @@ behind.
 - **Make the text as wide as you like.** On a wide screen, drag the handle
   between the text and the side panel. Your width is remembered;
   double-click the handle to reset it.
+- **Mark each passage as you read it.** Tap the circle beside a passage each
+  time you read it and it keeps count (✓, 2×, 3×…). The button on each amud
+  marks the whole amud read at once. The top of the text shows how many
+  times you've read the whole daf through, and reading every passage offers
+  to mark the daf as learned.
 - **Notes on every daf.** They save as you type. The Notes page collects them
   all in the order of the Shas, with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a

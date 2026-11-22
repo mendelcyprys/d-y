@@ -7,7 +7,8 @@ into `main`; merging it puts the change live.
 
 - Keep logic that doesn't need the DOM in `src/schedule.js` / `src/progress.js` and cover it with tests in `test/`.
 - Dafim are identified by an index (days since 24 June 1975, cycle 8 day 0). Learned dafim are stored per cycle as
-  `"14/Arakhin/5": "YYYY-MM-DD"`; notes are per daf across cycles as `"Arakhin 5"`.
+  `"14/Arakhin/5": "YYYY-MM-DD"`; notes and passage reads are per daf across cycles as `"Arakhin 5"`. A passage is
+  `"<amud>:<n>"` (1-based, Sefaria's segments), or `"<amud>:all"` when the two languages don't line up.
 - Tractate names follow Sefaria's spelling (Berakhot, Arakhin, Bekhorot, Meilah...). Kinnim (23–25), Tamid (26–33) and
   Middot (34–37) continue Meilah's page numbers.
 - Sefaria texts are untrusted HTML: always render them through `textToFragment` in `src/sanitize.js`, never `innerHTML`.

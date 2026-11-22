@@ -91,9 +91,20 @@ function persist() {
 }
 
 let toastTimer;
-function toast(message, ms = 3500) {
+function toast(message, ms = 3500, action = null) {
   const el = document.getElementById('toast');
   el.replaceChildren(...[].concat(message));
+  if (action) {
+    el.append(' ', h('button', {
+      type: 'button',
+      class: 'toast-action',
+      onclick: () => {
+        el.classList.remove('show');
+        action.onClick();
+      },
+    }, action.label));
+  }
+  el.classList.toggle('has-action', Boolean(action));
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), ms);
@@ -102,6 +113,24 @@ function toast(message, ms = 3500) {
 function updateStorageWarning() {
   document.getElementById('storage-warning').hidden = storageAvailable();
 }
+
+/** Mark a daf as learned (or not), with a mazal tov at the end of a tractate. */
+function setDafLearned(index, learned) {
+  const { tractate, cycle } = S.dafAtIndex(index);
+  P.setLearned(state, index, learned, today());
+  if (learned && !state.start) P.setStart(state, index);
+  persist();
+  if (learned && P.tractateComplete(state, cycle, tractate)) {
+    toast([
+      h('strong', {}, `Mazal tov! You've finished ${tractate.en}.`), ' ',
+      h('span', { lang: 'he', dir: 'rtl' }, `הדרן עלך מסכת ${tractate.he}`),
+    ], 8000);
+  } else if (learned) {
+    toast(`Marked ${dafName(index)} as learned.`);
+  }
+}
+
+const timesWord = (n) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${number.format(n)} times`);
 
 function progressBar(learned, total, label) {
   const pct = total ? Math.round((learned / total) * 1000) / 10 : 0;
@@ -205,7 +234,22 @@ function dafPage(index, { home }) {
     return dafHeadCard(index, { home, onChange: refresh });
   }
 
-  column.append(...[paceCard, headCard, textCard(index)].filter(Boolean));
+  // Reading every passage offers to mark the daf as learned.
+  function onReadThrough(times) {
+    if (times === 1 && !P.isLearned(state, index)) {
+      toast(`You've read every passage of ${dafName(index)}.`, 10000, {
+        label: 'Mark daf as learned',
+        onClick: () => {
+          setDafLearned(index, true);
+          refresh();
+        },
+      });
+    } else {
+      toast(`You've read ${dafName(index)} through ${timesWord(times)}.`);
+    }
+  }
+
+  column.append(...[paceCard, headCard, textCard(index, { onReadThrough })].filter(Boolean));
   side.append(...[notesCard(tractate, S.dafAtIndex(index).daf), home ? reviewCard() : null, gotoCard(index)].filter(Boolean));
   page.append(column, resizeHandle(page, column), side);
   applyTextWidth(page);
@@ -306,18 +350,7 @@ function dafHeadCard(index, { home, onChange }) {
   const { learned, total } = P.tractateProgress(state, cycle, tractate);
 
   function toggle() {
-    const nowLearned = !P.isLearned(state, index);
-    P.setLearned(state, index, nowLearned, today());
-    if (nowLearned && !state.start) P.setStart(state, index);
-    persist();
-    if (nowLearned && P.tractateComplete(state, cycle, tractate)) {
-      toast([
-        h('strong', {}, `Mazal tov! You've finished ${tractate.en}.`), ' ',
-        h('span', { lang: 'he', dir: 'rtl' }, `הדרן עלך מסכת ${tractate.he}`),
-      ], 8000);
-    } else if (nowLearned) {
-      toast(`Marked ${dafName(index)} as learned.`);
-    }
+    setDafLearned(index, !P.isLearned(state, index));
     onChange();
   }
 
@@ -475,9 +508,10 @@ function amudLabelHe(label) {
   return S.hebrewNumeral(Number(m[1])).replace(/[׳״]/g, '') + (m[2] === 'a' ? '.' : ':');
 }
 
-function textCard(index) {
+function textCard(index, { onReadThrough } = {}) {
   const settings = state.settings;
-  const { tractate } = S.dafAtIndex(index);
+  const { tractate, daf } = S.dafAtIndex(index);
+  const readSummary = h('div', { class: 'reading-summary small', hidden: true, 'aria-live': 'polite' });
   const body = h('div', {
     class: 'text-body',
     'data-layout': settings.layout,
@@ -581,6 +615,78 @@ function textCard(index) {
     body.style.setProperty('--scale', settings.fontScale);
   };
 
+  // ---- Reading passages: marks beside each passage, a button on each amud,
+  // and a summary for the whole daf.
+  const passagesIn = (root) => [...root.querySelectorAll('.seg-mark')].map((m) => m.dataset.passage);
+  const countsIn = (root) => passagesIn(root).map((p) => P.readCount(state, tractate, daf, p));
+
+  function updateReading() {
+    for (const mark of body.querySelectorAll('.seg-mark')) {
+      const { passage, number: n, amud } = mark.dataset;
+      const dates = P.readDates(state, tractate, daf, passage);
+      const count = dates.length;
+      const button = mark.querySelector('.read-btn');
+      const name = n === 'all' ? amud : `passage ${n} of ${amud}`;
+      mark.classList.toggle('is-read', count > 0);
+      button.textContent = count === 0 ? '' : count === 1 ? '✓' : `${count}×`;
+      button.setAttribute('aria-label', count
+        ? `Read ${timesWord(count)}, last ${relativeDay(S.parseIsoDate(dates[count - 1]))}. Mark ${name} read again`
+        : `Mark ${name} as read`);
+      button.title = count
+        ? `Read ${timesWord(count)}, last ${relativeDay(S.parseIsoDate(dates[count - 1]))}. Click when you read it again.`
+        : 'Mark as read';
+      mark.querySelector('.unread-btn').hidden = count === 0;
+    }
+
+    for (const section of body.querySelectorAll('.amud-section')) {
+      const { total, times, ahead, read } = P.readingSummary(countsIn(section));
+      const label = section.dataset.label;
+      let text = '';
+      if (times > 0) text = `Read ${timesWord(times)}${ahead ? ` · ${ahead} of ${total} again` : ''}`;
+      else if (read > 0) text = `${read} of ${total} read`;
+      section.querySelector('.amud-progress').textContent = text;
+      const button = section.querySelector('.amud-read-btn');
+      button.textContent = times > 0 ? `Read ${label} again` : `Mark ${label} read`;
+    }
+
+    const { total, times, ahead, read } = P.readingSummary(countsIn(body));
+    readSummary.hidden = total === 0;
+    if (times > 0) {
+      readSummary.replaceChildren(h('strong', {}, `Read through ${timesWord(times)}`),
+        ahead ? ` · ${ahead} of ${total} passages read again` : '');
+    } else if (read > 0) {
+      readSummary.replaceChildren(`${read} of ${total} passages read`);
+    } else {
+      readSummary.replaceChildren('Tap the circle beside each passage as you read it.');
+    }
+    readSummary.prepend(progressBar(times > 0 ? ahead : read, total, 'Passages read'));
+  }
+
+  function changeReads(change) {
+    const before = P.readingSummary(countsIn(body)).times;
+    change();
+    persist();
+    updateReading();
+    const after = P.readingSummary(countsIn(body)).times;
+    if (after > before) onReadThrough?.(after);
+  }
+
+  body.addEventListener('click', (event) => {
+    const mark = event.target.closest('.seg-mark');
+    if (mark && event.target.closest('.read-btn')) {
+      changeReads(() => P.addRead(state, tractate, daf, mark.dataset.passage, today()));
+      return;
+    }
+    if (mark && event.target.closest('.unread-btn')) {
+      changeReads(() => P.removeRead(state, tractate, daf, mark.dataset.passage));
+      return;
+    }
+    const amud = event.target.closest('.amud-read-btn');
+    if (amud) {
+      changeReads(() => P.finishReading(state, tractate, daf, passagesIn(amud.closest('.amud-section')), today()));
+    }
+  });
+
   // Footnote markers open and close their note.
   body.addEventListener('click', (event) => {
     const marker = event.target.closest('.fn-marker');
@@ -597,6 +703,7 @@ function textCard(index) {
     try {
       const text = await loadDaf(index);
       body.replaceChildren(...text.sections.map(sectionView));
+      updateReading();
       gemaraShown = true;
       showRashi();
       const { he, en } = text.versions;
@@ -632,6 +739,7 @@ function textCard(index) {
         h('button', { type: 'button', onclick: resize(0.1), 'aria-label': 'Larger text' }, 'A+'),
       ),
     ),
+    readSummary,
     rashiNote,
     body,
     credits,
@@ -640,10 +748,24 @@ function textCard(index) {
 
 function sectionView(section) {
   const he = amudLabelHe(section.label);
-  const heading = h('h3', { class: 'amud' },
-    h('span', {}, section.label),
-    he ? h('span', { class: 'he', lang: 'he', dir: 'rtl' }, he) : null,
+  const heading = h('div', { class: 'amud' },
+    h('h3', {}, section.label),
+    h('span', { class: 'amud-progress small' }),
+    h('button', { type: 'button', class: 'amud-read-btn' }, `Mark ${section.label} read`),
+    he ? h('span', { class: 'he amud-he', lang: 'he', dir: 'rtl' }, he) : null,
   );
+
+  // Beside each passage: a circle to tap each time you read it, and a small
+  // button to take back a read tapped by mistake.
+  const mark = (n) => h('div', {
+    class: 'seg-mark',
+    'data-passage': `${section.label}:${n}`,
+    'data-amud': section.label,
+    'data-number': String(n),
+  },
+  h('button', { type: 'button', class: 'read-btn' }),
+  h('button', { type: 'button', class: 'unread-btn', 'aria-label': 'Take back one read', title: 'Take back one read', hidden: true }, '−'));
+  const row = (n, ...cells) => h('div', { class: 'seg-row' }, mark(n), h('div', { class: 'seg-content' }, cells));
   const para = (html, lang) => h('p', lang === 'he' ? { lang: 'he', dir: 'rtl' } : { lang: 'en' }, textToFragment(html));
 
   // When both languages have the same number of passages, line them up side
@@ -654,18 +776,18 @@ function sectionView(section) {
   let rows;
   if (section.he.length === section.en.length) {
     rows = section.he.map((heText, i) => (heText || section.en[i]
-      ? h('div', { class: 'seg-row' },
+      ? row(i + 1,
         h('div', { class: 'he' }, para(heText, 'he')),
         h('div', { class: 'en' }, para(section.en[i], 'en')),
         rashiSlot(String(i)))
       : null));
   } else {
-    rows = [h('div', { class: 'seg-row' },
+    rows = [row('all',
       h('div', { class: 'he' }, section.he.map((t) => para(t, 'he'))),
       h('div', { class: 'en' }, section.en.map((t) => para(t, 'en'))),
       rashiSlot('all'))];
   }
-  return h('section', { class: 'amud-section' }, heading, rows);
+  return h('section', { class: 'amud-section', 'data-label': section.label }, heading, rows);
 }
 
 // Rashi's comments on one passage, each starting with the words of the
