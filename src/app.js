@@ -166,6 +166,8 @@ let renderedDay = null;
 function render() {
   const route = parseRoute();
   renderedDay = S.isoDate(today());
+  stopTracking?.();
+  stopTracking = null;
   for (const link of document.querySelectorAll('[data-nav]')) {
     const active = link.dataset.nav === (route.view === 'daf' ? 'learn' : route.view);
     if (active) link.setAttribute('aria-current', 'page');
@@ -253,7 +255,135 @@ function dafPage(index, { home }) {
   side.append(...[notesCard(tractate, S.dafAtIndex(index).daf), home ? reviewCard() : null, gotoCard(index)].filter(Boolean));
   page.append(column, resizeHandle(page, column), side);
   applyTextWidth(page);
+  stopTracking = trackReading(page);
   return page;
+}
+
+// ---------------------------------------------------------------------------
+// Where you are in a long daf. A line along the bottom of the top bar fills
+// as you scroll through the text, and a label beside the logo says which
+// amud and passage you're on. Tapping the label opens a menu to jump to the
+// top, to an amud, or to your notes.
+
+const topbar = document.querySelector('.topbar');
+const readingNav = document.getElementById('reading-nav');
+const readingStatus = document.getElementById('reading-status');
+const readingMenu = document.getElementById('reading-menu');
+const readingLine = document.getElementById('reading-line');
+let stopTracking = null;
+
+// Keep the top bar's height in a CSS variable, so that jumping to a heading
+// leaves it in view below the bar.
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty('--topbar-h', `${topbar.offsetHeight}px`);
+}).observe(topbar);
+
+const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
+function closeReadingMenu() {
+  readingMenu.hidden = true;
+  readingStatus.setAttribute('aria-expanded', 'false');
+}
+
+function trackReading(page) {
+  let frame = 0;
+
+  function update() {
+    frame = 0;
+    const body = page.querySelector('.text-body');
+    const rows = [...page.querySelectorAll('.seg-row')];
+    if (!body || !rows.length) {
+      readingNav.hidden = true;
+      readingLine.hidden = true;
+      return;
+    }
+    const barBottom = topbar.getBoundingClientRect().bottom;
+    const rect = body.getBoundingClientRect();
+
+    // 0% when the text reaches the top bar, 100% when its end comes into view.
+    const range = rect.height - (window.innerHeight - barBottom);
+    const pct = Math.round(Math.min(1, Math.max(0, range > 0 ? (barBottom - rect.top) / range : 1)) * 100);
+    readingLine.hidden = false;
+    readingLine.firstElementChild.style.width = `${pct}%`;
+
+    // The passage you're reading: the last one that has started above a line
+    // a third of the way down the screen.
+    const readAt = barBottom + (window.innerHeight - barBottom) / 3;
+    if (rect.top > readAt) {
+      readingNav.hidden = true;
+      closeReadingMenu();
+      return;
+    }
+    let current = rows[0];
+    for (const row of rows) {
+      if (row.getBoundingClientRect().top <= readAt) current = row;
+      else break;
+    }
+    const { amud, number: n } = current.querySelector('.seg-mark').dataset;
+    const total = current.closest('.amud-section').querySelectorAll('.seg-row').length;
+    readingStatus.textContent = n === 'all' ? `${amud} · ${pct}%` : `${amud} · ${n}/${total} · ${pct}%`;
+    readingStatus.setAttribute('aria-label', n === 'all'
+      ? `You're on ${amud}, ${pct}% of the way through. Jump to…`
+      : `You're on ${amud}, passage ${n} of ${total}, ${pct}% of the way through. Jump to…`);
+    readingNav.hidden = false;
+  }
+
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(update);
+  };
+
+  function openMenu() {
+    const jump = (target, focus) => () => {
+      closeReadingMenu();
+      target.scrollIntoView({ behavior: smooth(), block: 'start' });
+      focus?.focus({ preventScroll: true });
+    };
+    const amudim = [...page.querySelectorAll('.amud-section')];
+    readingMenu.replaceChildren(
+      h('button', { type: 'button', onclick: jump(page.querySelector('.daf-head')) }, 'Top of the daf'),
+      ...amudim.map((section) => h('button', { type: 'button', onclick: jump(section.querySelector('.amud')) },
+        section.dataset.label,
+        h('span', { class: 'small' }, `${section.querySelectorAll('.seg-row').length} passages`))),
+      h('button', { type: 'button', onclick: jump(page.querySelector('.notes-card'), page.querySelector('#note-text')) }, 'Your notes'),
+    );
+    readingMenu.hidden = false;
+    readingStatus.setAttribute('aria-expanded', 'true');
+    readingMenu.querySelector('button').focus({ preventScroll: true });
+  }
+
+  const onStatusClick = () => (readingMenu.hidden ? openMenu() : closeReadingMenu());
+  const onDocumentClick = (event) => {
+    if (!readingNav.contains(event.target)) closeReadingMenu();
+  };
+  const onKey = (event) => {
+    if (event.key === 'Escape' && !readingMenu.hidden) {
+      closeReadingMenu();
+      readingStatus.focus();
+    }
+  };
+
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  readingStatus.addEventListener('click', onStatusClick);
+  document.addEventListener('click', onDocumentClick);
+  document.addEventListener('keydown', onKey);
+  // The text arrives a moment after the page, and Rashi after that.
+  const observer = new MutationObserver(schedule);
+  observer.observe(page, { childList: true, subtree: true });
+  schedule();
+
+  return () => {
+    cancelAnimationFrame(frame);
+    window.removeEventListener('scroll', schedule);
+    window.removeEventListener('resize', schedule);
+    readingStatus.removeEventListener('click', onStatusClick);
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onKey);
+    observer.disconnect();
+    closeReadingMenu();
+    readingNav.hidden = true;
+    readingLine.hidden = true;
+  };
 }
 
 // ---------------------------------------------------------------------------
