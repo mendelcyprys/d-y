@@ -1,0 +1,11 @@
+{
+  "name": "daf-yomi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Learn the daily daf at your own pace.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test"
+  }
+}
