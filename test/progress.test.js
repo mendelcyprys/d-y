@@ -127,7 +127,10 @@ test('saved state is cleaned up when loaded', () => {
   assert.equal(state.start, null);
   assert.deepEqual(Object.keys(state.learned), ['14/Arakhin/2']);
   assert.deepEqual(Object.keys(state.notes), ['Arakhin 2']);
-  assert.deepEqual(state.settings, { layout: 'both', fontScale: 1, rashi: true, rashiScript: false });
+  assert.deepEqual(state.settings, { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null });
+  assert.equal(P.normalizeState({ settings: { textWidth: 1100.4 } }).settings.textWidth, 1100);
+  assert.equal(P.normalizeState({ settings: { textWidth: 50 } }).settings.textWidth, null);
+  assert.equal(P.normalizeState({ settings: { textWidth: 'wide' } }).settings.textWidth, null);
   assert.equal(P.normalizeState({ settings: { rashi: false } }).settings.rashi, false);
   assert.equal(P.normalizeState({ settings: { rashiScript: true } }).settings.rashiScript, true);
   assert.deepEqual(P.normalizeState(null), P.emptyState());

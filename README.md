@@ -22,6 +22,9 @@ behind.
   the Rashbam takes over, as in a printed Gemara. Switch it off with the
   Rashi button, or press **Rashi script** to read it in the traditional
   Rashi letters.
+- **Make the text as wide as you like.** On a wide screen, drag the handle
+  between the text and the side panel. Your width is remembered;
+  double-click the handle to reset it.
 - **Notes on every daf.** They save as you type. The Notes page collects them
   all in the order of the Shas, with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a

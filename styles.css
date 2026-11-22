@@ -118,7 +118,8 @@ p { margin: 0 0 .75rem; }
   text-align: center;
 }
 
-main { max-width: 1200px; margin: 0 auto; padding: 1.25rem 16px 3rem; outline: none; }
+main { padding: 1.25rem 16px 3rem; outline: none; }
+.page { max-width: 1200px; margin: 0 auto; }
 
 .footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 2rem; text-align: center; }
 
@@ -202,10 +203,50 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 
 /* ---- Daf page --------------------------------------------------------- */
 
-.daf-layout { display: grid; gap: 0 1.25rem; }
+.daf-layout { display: grid; max-width: 1200px; margin: 0 auto; }
+.resize-handle { display: none; }
+
+/* With room for the side panel: text, a draggable gutter, then the panel.
+   Once you've dragged the gutter, the text keeps that width (as far as the
+   window allows) and the page stays centred. */
 @media (min-width: 1040px) {
-  .daf-layout { grid-template-columns: minmax(0, 1fr) 330px; align-items: start; }
+  .daf-layout { grid-template-columns: minmax(0, 1fr) 20px 330px; align-items: start; }
+  .daf-layout.has-width {
+    grid-template-columns: minmax(0, var(--text-width)) 20px 330px;
+    width: min(100%, calc(var(--text-width) + 350px));
+    max-width: none;
+  }
   .daf-side { position: sticky; top: 5rem; }
+
+  .resize-handle {
+    display: block;
+    position: relative;
+    align-self: stretch;
+    margin-bottom: 1rem;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .resize-handle::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+  .resize-handle .grip {
+    position: sticky;
+    top: calc(50vh - 22px);
+    display: block;
+    width: 6px;
+    height: 44px;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: var(--line);
+  }
+  .resize-handle:hover::before, .resize-handle:focus-visible::before, .is-resizing .resize-handle::before { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .resize-handle:hover .grip, .resize-handle:focus-visible .grip, .is-resizing .grip { background: var(--accent); }
+  .is-resizing { cursor: col-resize; user-select: none; }
 }
 
 .tags { display: flex; gap: .4rem; margin-bottom: .5rem; }
