@@ -22,6 +22,10 @@ behind.
   the Rashbam takes over, as in a printed Gemara. Switch it off with the
   Rashi button, or press **Rashi script** to read it in the traditional
   Rashi letters.
+- **Know where you are in a long daf.** A line along the top bar fills as
+  you scroll, and a label shows the amud, passage and percentage (e.g.
+  "2a · 7/17 · 38%"). Tap it to jump to the top, to either amud, or to your
+  notes.
 - **Make the text as wide as you like.** On a wide screen, drag the handle
   between the text and the side panel. Your width is remembered;
   double-click the handle to reset it.

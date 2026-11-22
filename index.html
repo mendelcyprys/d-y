@@ -23,12 +23,17 @@
       <span class="brand-mark" lang="he" dir="rtl">דף יומי</span>
       <span class="brand-name">Daf Yomi</span>
     </a>
+    <div class="reading-nav" id="reading-nav" hidden>
+      <button type="button" class="reading-status" id="reading-status" aria-haspopup="true" aria-expanded="false"></button>
+      <div class="reading-menu" id="reading-menu" hidden></div>
+    </div>
     <nav class="nav" aria-label="Main">
       <a href="#/" data-nav="learn">Learn</a>
       <a href="#/progress" data-nav="progress">Progress</a>
       <a href="#/notes" data-nav="notes">Notes</a>
       <a href="#/schedule" data-nav="schedule">Schedule</a>
     </nav>
+    <div class="reading-line" id="reading-line" hidden aria-hidden="true"><span></span></div>
   </header>
   <p id="storage-warning" class="banner" hidden>
     This browser isn't letting the app save, so your progress and notes will be lost when you close the page.
