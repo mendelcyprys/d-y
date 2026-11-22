@@ -2,6 +2,8 @@
 
 Static web app: vanilla ES modules, no build step, no dependencies.
 Run with `npm start` (python http.server on :8000). Test with `npm test` (node:test).
+Published by GitHub Pages from `main` (https://mendelcyprys.github.io/d-y/): work on a branch and open a pull request
+into `main`; merging it puts the change live.
 
 - Keep logic that doesn't need the DOM in `src/schedule.js` / `src/progress.js` and cover it with tests in `test/`.
 - Dafim are identified by an index (days since 24 June 1975, cycle 8 day 0). Learned dafim are stored per cycle as

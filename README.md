@@ -47,11 +47,11 @@ npm start
 Then open <http://localhost:8000>. Any static file server works; this one
 uses Python's built-in server.
 
-**On your phone, or anywhere:** host it with GitHub Pages. In the
-repository on GitHub, go to **Settings → Pages**, set the source to
-**Deploy from a branch**, and choose the branch and the `/ (root)` folder.
-After a minute it will be at `https://<your-username>.github.io/d-y/`. On a
-phone, use "Add to Home Screen" to open it like an app.
+**On your phone, or anywhere:** the app is published with GitHub Pages
+from the `main` branch (**Settings → Pages → Deploy from a branch → `main`,
+`/ (root)`**), at <https://mendelcyprys.github.io/d-y/>. Anything merged
+into `main` goes live a minute or two later. On a phone, use "Add to Home
+Screen" to open it like an app.
 
 ## How it works
 
