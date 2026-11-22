@@ -29,6 +29,23 @@ difficult Rashi, a contradiction between sources, how a Rishon or the Rambam lea
    - If an earlier answer was wrong, keep it and add a dated line under "Corrections".
 4. **Commit** (e.g. `Research: Arakhin 3a, the non-expert kohen`) and push.
 
+## Writing a sugya summary
+
+When asked to summarize a sugya, or to add a summary note for one, do these steps.
+
+1. **Read the whole sugya on Sefaria** before writing: the Gemara with Rashi and Tosafos, and other Rishonim or the
+   Rambam where they matter. Find where it starts and ends, and the Mishnah or question it hangs on.
+2. **Write `research/<tractate>-<from>-<to>-<topic>.md`** with `kind: summary`, using the template in
+   `research/README.md`. It has these parts:
+   - what the sugya does;
+   - where it sits;
+   - how it runs, step by step with daf references and the key words quoted (or as a table, for a sugya that is a list);
+   - its main points and disputes;
+   - what wasn't checked.
+3. **Link it** to the question files in `research/` that fall within its range, and add a link back from each of them.
+   Add the summary to the index.
+4. **Commit** (e.g. `Research: summary of Arakhin 2a–3b, the "hakol" statements`) and push.
+
 Sefaria endpoints for this. Wait about 2 s between requests.
 - Text: `GET https://www.sefaria.org/api/v3/texts/<Ref>?version=hebrew` (`hebrew|all` lists every version). Refs use
   underscores, e.g. `Rashi_on_Arakhin.3a.12`, `Tosafot_on_Arakhin.3a.13`,

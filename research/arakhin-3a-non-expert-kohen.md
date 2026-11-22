@@ -1,4 +1,5 @@
 ---
+kind: question
 daf: Arakhin 3a
 topic: The kohen who isn't expert in nega'im (Rashi's wording, the Sifra's "shoteh", the Rambam)
 asked: 2026-11-22
