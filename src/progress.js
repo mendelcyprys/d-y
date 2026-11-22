@@ -8,13 +8,14 @@
 //     start: { cycle: 14, tractate: 'Arakhin', daf: 2 } | null,
 //     learned: { '14/Arakhin/2': '2026-11-22', ... },   // daf -> date learned
 //     notes: { 'Arakhin 2': { text: '...', updated: '2026-11-22T18:00:00.000Z' } },
+//     reads: { 'Arakhin 2': { '2a:3': ['2026-11-22', '2026-11-25'] } },  // passage -> each read
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
 //                 textWidth: null | pixels }
 //   }
 //
 // Learned dafim are kept per cycle, so learning Arakhin 2 now doesn't mark it
-// as learned when it comes round again in seven and a half years. Notes are
-// about the daf itself, so they carry over from cycle to cycle.
+// as learned when it comes round again in seven and a half years. Notes and
+// passage reads are about the daf itself, so they carry over between cycles.
 
 import {
   TRACTATES, CYCLE_LENGTH, dafAtIndex, indexFor, findTractate,
@@ -32,6 +33,7 @@ export function emptyState() {
     start: null,
     learned: {},
     notes: {},
+    reads: {},
     settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null },
   };
 }
@@ -59,6 +61,14 @@ export function indexFromLearnedKey(key) {
 
 export function noteKey(tractate, daf) {
   return `${tractate.en} ${daf}`;
+}
+
+/** { tractate, daf } for a key like "Arakhin 5", or null. */
+function parseDafKey(key) {
+  const m = /^(.+) (\d+)$/.exec(key);
+  const tractate = m && findTractate(m[1]);
+  const daf = m && Number(m[2]);
+  return tractate && daf >= tractate.start && daf <= tractate.end ? { tractate, daf } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,12 +226,70 @@ export function allNotes(state) {
   const order = new Map(TRACTATES.map((t, i) => [t.en, i]));
   return Object.entries(state.notes)
     .map(([key, note]) => {
-      const m = /^(.+) (\d+)$/.exec(key);
-      const tractate = m && findTractate(m[1]);
-      return tractate ? { tractate, daf: Number(m[2]), text: note.text, updated: note.updated } : null;
+      const found = parseDafKey(key);
+      return found ? { ...found, text: note.text, updated: note.updated } : null;
     })
     .filter(Boolean)
     .sort((a, b) => order.get(a.tractate.en) - order.get(b.tractate.en) || a.daf - b.daf);
+}
+
+// ---------------------------------------------------------------------------
+// Reading passages
+//
+// Each passage of a daf (as Sefaria divides the text) can be marked as read
+// as many times as you read it. A passage is named by its amud and number,
+// e.g. "2a:3"; when the two languages don't line up the whole amud is one
+// passage, "2a:all". Every read is kept with its date.
+
+export function readDates(state, tractate, daf, passage) {
+  return state.reads[noteKey(tractate, daf)]?.[passage] || [];
+}
+
+export function readCount(state, tractate, daf, passage) {
+  return readDates(state, tractate, daf, passage).length;
+}
+
+export function addRead(state, tractate, daf, passage, today) {
+  const reads = (state.reads[noteKey(tractate, daf)] ??= {});
+  (reads[passage] ??= []).push(isoDate(today));
+}
+
+/** Take back the most recent read of a passage. */
+export function removeRead(state, tractate, daf, passage) {
+  const key = noteKey(tractate, daf);
+  const list = state.reads[key]?.[passage];
+  if (!list?.length) return;
+  list.pop();
+  if (!list.length) delete state.reads[key][passage];
+  if (!Object.keys(state.reads[key]).length) delete state.reads[key];
+}
+
+/**
+ * Finish a read-through of some passages (an amud, say): every passage that
+ * hasn't yet been read as many times as this read-through gets one more read.
+ */
+export function finishReading(state, tractate, daf, passages, today) {
+  if (!passages.length) return;
+  const target = Math.min(...passages.map((p) => readCount(state, tractate, daf, p))) + 1;
+  for (const p of passages) {
+    if (readCount(state, tractate, daf, p) < target) addRead(state, tractate, daf, p, today);
+  }
+}
+
+/**
+ * Sum up read counts: how many times the whole thing has been read through
+ * (the fewest reads of any passage), how many passages are ahead of that,
+ * and how many have been read at all.
+ */
+export function readingSummary(counts) {
+  const total = counts.length;
+  const times = total ? Math.min(...counts) : 0;
+  return {
+    total,
+    times,
+    ahead: counts.filter((c) => c > times).length,
+    read: counts.filter((c) => c > 0).length,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -246,15 +314,23 @@ export function normalizeState(raw) {
   }
 
   for (const [key, note] of Object.entries(raw.notes || {})) {
-    const m = /^(.+) (\d+)$/.exec(key);
-    const tractate = m && findTractate(m[1]);
-    if (!tractate || typeof note?.text !== 'string' || !note.text.trim()) continue;
-    const daf = Number(m[2]);
-    if (daf < tractate.start || daf > tractate.end) continue;
+    const found = parseDafKey(key);
+    if (!found || typeof note?.text !== 'string' || !note.text.trim()) continue;
+    const { tractate, daf } = found;
     state.notes[noteKey(tractate, daf)] = {
       text: note.text,
       updated: typeof note.updated === 'string' ? note.updated : new Date(0).toISOString(),
     };
+  }
+
+  for (const [key, passages] of Object.entries(raw.reads || {})) {
+    const found = parseDafKey(key);
+    if (!found || !passages || typeof passages !== 'object') continue;
+    for (const [passage, dates] of Object.entries(passages)) {
+      if (passage.length > 60 || !Array.isArray(dates)) continue;
+      const valid = dates.filter((d) => parseIsoDate(d)).slice(-1000);
+      if (valid.length) (state.reads[noteKey(found.tractate, found.daf)] ??= {})[passage] = valid;
+    }
   }
 
   const settings = raw.settings || {};
@@ -284,6 +360,13 @@ export function mergeStates(current, incoming) {
   }
   for (const [key, note] of Object.entries(b.notes)) {
     if (!merged.notes[key] || note.updated > merged.notes[key].updated) merged.notes[key] = note;
+  }
+  // For passage reads, keep whichever copy has more reads of each passage.
+  for (const [key, passages] of Object.entries(b.reads)) {
+    for (const [passage, dates] of Object.entries(passages)) {
+      const mine = merged.reads[key]?.[passage] || [];
+      if (dates.length > mine.length) (merged.reads[key] ??= {})[passage] = dates;
+    }
   }
   if (!merged.start) merged.start = b.start;
   return merged;

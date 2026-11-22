@@ -154,3 +154,53 @@ test('importing a backup merges without losing anything', () => {
   assert.equal(P.getNote(merged, arakhin, 3), 'only in backup');
   assert.deepEqual(merged.start, { cycle: 14, tractate: 'Arakhin', daf: 2 });
 });
+
+test('passages can be read again and again, and a read taken back', () => {
+  const state = P.emptyState();
+  P.addRead(state, arakhin, 2, '2a:3', day('2026-11-22'));
+  P.addRead(state, arakhin, 2, '2a:3', day('2026-11-25'));
+  assert.equal(P.readCount(state, arakhin, 2, '2a:3'), 2);
+  assert.deepEqual(P.readDates(state, arakhin, 2, '2a:3'), ['2026-11-22', '2026-11-25']);
+  assert.equal(P.readCount(state, arakhin, 2, '2a:4'), 0);
+  P.removeRead(state, arakhin, 2, '2a:3');
+  assert.deepEqual(P.readDates(state, arakhin, 2, '2a:3'), ['2026-11-22']);
+  P.removeRead(state, arakhin, 2, '2a:3');
+  P.removeRead(state, arakhin, 2, '2a:3'); // nothing left to take back
+  assert.deepEqual(state.reads, {});
+});
+
+test('reading summary: times through, and passages ahead of that', () => {
+  assert.deepEqual(P.readingSummary([0, 0, 0]), { total: 3, times: 0, ahead: 0, read: 0 });
+  assert.deepEqual(P.readingSummary([1, 0, 2]), { total: 3, times: 0, ahead: 2, read: 2 });
+  assert.deepEqual(P.readingSummary([1, 1, 1]), { total: 3, times: 1, ahead: 0, read: 3 });
+  assert.deepEqual(P.readingSummary([2, 1, 3]), { total: 3, times: 1, ahead: 2, read: 3 });
+  assert.deepEqual(P.readingSummary([]), { total: 0, times: 0, ahead: 0, read: 0 });
+});
+
+test('finishing a read-through tops up only the passages that need it', () => {
+  const state = P.emptyState();
+  const passages = ['2a:1', '2a:2', '2a:3'];
+  P.addRead(state, arakhin, 2, '2a:2', TODAY);
+  P.finishReading(state, arakhin, 2, passages, TODAY);
+  assert.deepEqual(passages.map((p) => P.readCount(state, arakhin, 2, p)), [1, 1, 1]);
+  P.finishReading(state, arakhin, 2, passages, TODAY);
+  assert.deepEqual(passages.map((p) => P.readCount(state, arakhin, 2, p)), [2, 2, 2]);
+});
+
+test('passage reads survive loading and merge on import', () => {
+  const loaded = P.normalizeState({
+    reads: {
+      'Arakhin 2': { '2a:1': ['2026-11-22', 'bad'], '2a:2': 'nope', '2a:3': [] },
+      'Arakhin 99': { '2a:1': ['2026-11-22'] },
+    },
+  });
+  assert.deepEqual(loaded.reads, { 'Arakhin 2': { '2a:1': ['2026-11-22'] } });
+
+  const backup = P.emptyState();
+  P.addRead(backup, arakhin, 2, '2a:1', TODAY);
+  P.addRead(backup, arakhin, 2, '2a:1', TODAY);
+  P.addRead(backup, arakhin, 3, '3a:1', TODAY);
+  const merged = P.mergeStates(loaded, backup);
+  assert.equal(P.readCount(merged, arakhin, 2, '2a:1'), 2);
+  assert.equal(P.readCount(merged, arakhin, 3, '3a:1'), 1);
+});
