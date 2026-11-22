@@ -20,6 +20,7 @@
   --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-en: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-he: "Frank Ruhl Libre", "Taamey Frank CLM", "SBL Hebrew", "Times New Roman", serif;
+  --font-rashi: "Noto Rashi Hebrew", var(--font-he);
   --radius: 14px;
   color-scheme: light;
 }
@@ -178,7 +179,6 @@ main { max-width: 1200px; margin: 0 auto; padding: 1.25rem 16px 3rem; outline: n
   min-height: 2.25rem;
   padding: .3rem .75rem;
   border: 0;
-  border-right: 1px solid var(--line);
   background: var(--surface);
   color: var(--muted);
   font: inherit;
@@ -186,7 +186,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 1.25rem 16px 3rem; outline: n
   font-weight: 600;
   cursor: pointer;
 }
-.segmented button:last-child { border-right: 0; }
+.segmented button + button { border-left: 1px solid var(--line); }
 .segmented button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 
 input, select, textarea {
@@ -328,6 +328,11 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 .rashi-comment { margin: 0 0 .4rem; }
 .rashi-comment:last-child { margin-bottom: 0; }
 .rashi-comment b { font-weight: 700; }
+
+/* Rashi script, with the opening words in square letters as in print. */
+.text-body[data-rashi-script="on"] .rashi { font-family: var(--font-rashi); font-size: 1.12em; }
+.text-body[data-rashi-script="on"] .rashi-comment b,
+.text-body[data-rashi-script="on"] .rashi-label { font-family: var(--font-he); }
 .rashi-note { margin: 0 0 .5rem; }
 
 .fn-marker {

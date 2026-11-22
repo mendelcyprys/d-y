@@ -411,6 +411,7 @@ function textCard(index) {
     class: 'text-body',
     'data-layout': settings.layout,
     'data-rashi': settings.rashi ? 'on' : 'off',
+    'data-rashi-script': settings.rashiScript ? 'on' : 'off',
     style: { '--scale': settings.fontScale },
   }, h('p', { class: 'loading' }, 'Loading the text from Sefaria…'));
   const credits = h('p', { class: 'credits small' });
@@ -467,10 +468,26 @@ function textCard(index) {
       persist();
       body.dataset.rashi = settings.rashi ? 'on' : 'off';
       rashiButton.setAttribute('aria-pressed', String(settings.rashi));
+      scriptButton.hidden = !settings.rashi;
       rashiNote.hidden = !settings.rashi || !rashiNote.childNodes.length;
       showRashi();
     },
   }, 'Rashi');
+
+  // Rashi script: the letters Rashi's commentary is printed in, with the
+  // opening words in square letters, as on a page of the Vilna Shas.
+  const scriptButton = h('button', {
+    type: 'button',
+    hidden: !settings.rashi,
+    'aria-pressed': settings.rashiScript ? 'true' : 'false',
+    title: 'Show Rashi in Rashi script, as in a printed Gemara',
+    onclick: () => {
+      settings.rashiScript = !settings.rashiScript;
+      persist();
+      body.dataset.rashiScript = settings.rashiScript ? 'on' : 'off';
+      scriptButton.setAttribute('aria-pressed', String(settings.rashiScript));
+    },
+  }, 'Rashi script');
 
   const layoutButtons = [
     ['both', 'Both'],
@@ -538,7 +555,7 @@ function textCard(index) {
     h('div', { class: 'text-toolbar' },
       h('h2', { id: 'text-title' }, 'Text'),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Language' }, layoutButtons),
-      h('div', { class: 'segmented' }, rashiButton),
+      h('div', { class: 'segmented', role: 'group', 'aria-label': 'Rashi' }, rashiButton, scriptButton),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Text size' },
         h('button', { type: 'button', onclick: resize(-0.1), 'aria-label': 'Smaller text' }, 'A−'),
         h('button', { type: 'button', onclick: resize(0.1), 'aria-label': 'Larger text' }, 'A+'),

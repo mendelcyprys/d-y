@@ -20,7 +20,8 @@ behind.
 - **Rashi beside the Gemara.** Each passage has Rashi's comments on it next to
   it (or under it on a phone), with the opening words in bold. In Bava Batra
   the Rashbam takes over, as in a printed Gemara. Switch it off with the
-  Rashi button.
+  Rashi button, or press **Rashi script** to read it in the traditional
+  Rashi letters.
 - **Notes on every daf.** They save as you type. The Notes page collects them
   all in the order of the Shas, with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a

@@ -8,7 +8,7 @@
 //     start: { cycle: 14, tractate: 'Arakhin', daf: 2 } | null,
 //     learned: { '14/Arakhin/2': '2026-11-22', ... },   // daf -> date learned
 //     notes: { 'Arakhin 2': { text: '...', updated: '2026-11-22T18:00:00.000Z' } },
-//     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true }
+//     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false }
 //   }
 //
 // Learned dafim are kept per cycle, so learning Arakhin 2 now doesn't mark it
@@ -28,7 +28,7 @@ export function emptyState() {
     start: null,
     learned: {},
     notes: {},
-    settings: { layout: 'both', fontScale: 1, rashi: true },
+    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false },
   };
 }
 
@@ -258,6 +258,7 @@ export function normalizeState(raw) {
   const scale = Number(settings.fontScale);
   if (scale >= 0.7 && scale <= 2) state.settings.fontScale = scale;
   if (typeof settings.rashi === 'boolean') state.settings.rashi = settings.rashi;
+  if (typeof settings.rashiScript === 'boolean') state.settings.rashiScript = settings.rashiScript;
 
   return state;
 }
