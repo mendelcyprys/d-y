@@ -8,7 +8,8 @@
 //     start: { cycle: 14, tractate: 'Arakhin', daf: 2 } | null,
 //     learned: { '14/Arakhin/2': '2026-11-22', ... },   // daf -> date learned
 //     notes: { 'Arakhin 2': { text: '...', updated: '2026-11-22T18:00:00.000Z' } },
-//     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false }
+//     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
+//                 textWidth: null | pixels }
 //   }
 //
 // Learned dafim are kept per cycle, so learning Arakhin 2 now doesn't mark it
@@ -22,13 +23,16 @@ import {
 
 export const LAYOUTS = ['both', 'he', 'en'];
 
+/** Narrowest the text column can be dragged to, in pixels. */
+export const MIN_TEXT_WIDTH = 480;
+
 export function emptyState() {
   return {
     version: 1,
     start: null,
     learned: {},
     notes: {},
-    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false },
+    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null },
   };
 }
 
@@ -259,6 +263,8 @@ export function normalizeState(raw) {
   if (scale >= 0.7 && scale <= 2) state.settings.fontScale = scale;
   if (typeof settings.rashi === 'boolean') state.settings.rashi = settings.rashi;
   if (typeof settings.rashiScript === 'boolean') state.settings.rashiScript = settings.rashiScript;
+  const width = Number(settings.textWidth);
+  if (settings.textWidth != null && width >= MIN_TEXT_WIDTH && width <= 6000) state.settings.textWidth = Math.round(width);
 
   return state;
 }

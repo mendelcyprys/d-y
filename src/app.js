@@ -165,8 +165,8 @@ document.addEventListener('visibilitychange', () => {
 
 // Left and right arrow keys move between dafim on a daf page.
 document.addEventListener('keydown', (event) => {
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-  if (event.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.target.closest('input, textarea, select, [contenteditable], [role="separator"]')) return;
   const link = document.querySelector(event.key === 'ArrowLeft' ? '[data-pager=prev]' : event.key === 'ArrowRight' ? '[data-pager=next]' : null);
   if (link) {
     event.preventDefault();
@@ -207,8 +207,79 @@ function dafPage(index, { home }) {
 
   column.append(...[paceCard, headCard, textCard(index)].filter(Boolean));
   side.append(...[notesCard(tractate, S.dafAtIndex(index).daf), home ? reviewCard() : null, gotoCard(index)].filter(Boolean));
-  page.append(column, side);
+  page.append(column, resizeHandle(page, column), side);
+  applyTextWidth(page);
   return page;
+}
+
+// ---------------------------------------------------------------------------
+// Making the text column wider or narrower (on screens wide enough to have
+// the side panel beside it). The width is saved; double-click resets it.
+
+function applyTextWidth(layout) {
+  const width = state.settings.textWidth;
+  layout.classList.toggle('has-width', width != null);
+  if (width != null) layout.style.setProperty('--text-width', `${width}px`);
+  else layout.style.removeProperty('--text-width');
+}
+
+function resizeHandle(layout, column) {
+  const STEP = 40;
+  const handle = h('div', {
+    class: 'resize-handle',
+    role: 'separator',
+    tabindex: '0',
+    'aria-orientation': 'vertical',
+    'aria-label': 'Text width',
+    title: 'Drag to make the text wider or narrower. Double-click to reset.',
+  }, h('span', { class: 'grip' }));
+
+  // Widest the text can be: the whole window less the side panel and margins.
+  function clamp(width) {
+    const others = layout.getBoundingClientRect().width - column.getBoundingClientRect().width;
+    const max = document.documentElement.clientWidth - 32 - others;
+    return Math.round(Math.max(P.MIN_TEXT_WIDTH, Math.min(max, width)));
+  }
+
+  function setWidth(width, save) {
+    state.settings.textWidth = width == null ? null : clamp(width);
+    applyTextWidth(layout);
+    handle.setAttribute('aria-valuenow', String(Math.round(column.getBoundingClientRect().width)));
+    if (save) persist();
+  }
+
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    handle.setPointerCapture(event.pointerId);
+    const startX = event.clientX;
+    const startWidth = column.getBoundingClientRect().width;
+    layout.classList.add('is-resizing');
+    // The page stays centred, so it grows on both sides: twice the distance
+    // moved keeps the handle under the pointer.
+    const move = (e) => setWidth(startWidth + 2 * (e.clientX - startX), false);
+    const end = () => {
+      handle.removeEventListener('pointermove', move);
+      layout.classList.remove('is-resizing');
+      persist();
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end, { once: true });
+    handle.addEventListener('pointercancel', end, { once: true });
+  });
+
+  handle.addEventListener('dblclick', () => setWidth(null, true));
+
+  handle.addEventListener('keydown', (event) => {
+    const current = column.getBoundingClientRect().width;
+    if (event.key === 'ArrowRight') setWidth(current + STEP, true);
+    else if (event.key === 'ArrowLeft') setWidth(current - STEP, true);
+    else if (event.key === 'Home') setWidth(null, true);
+    else return;
+    event.preventDefault();
+  });
+
+  return handle;
 }
 
 function dafHeadCard(index, { home, onChange }) {
