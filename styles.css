@@ -402,6 +402,39 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   .seg-mark { order: 0; flex-direction: column; justify-content: flex-start; padding-top: .25rem; }
 }
 
+/* Context from the dafim either side: shaded, read-only. */
+.context {
+  margin: .25rem 0 1rem;
+  padding: 0 .9rem .5rem;
+  border: 1px dashed color-mix(in srgb, var(--muted) 40%, var(--surface));
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: .95em;
+}
+.context-after { margin: 1.5rem 0 .25rem; }
+.context-head, .context-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem 1rem; padding: .5rem 0 .25rem; }
+.context-head { font-weight: 600; }
+.context-foot { justify-content: flex-end; }
+.context-foot:has(> [hidden]:only-child), .context .link-button[hidden] { display: none; }
+
+/* At first only the passage next to the page break shows, cut off at the
+   far end with a fade: its end before the daf, its start after it. */
+.context-rows.is-clipped { display: flex; flex-direction: column; max-height: 13rem; overflow: hidden; }
+.context-rows.is-clipped > * { flex-shrink: 0; }
+.context-before .context-rows.is-clipped {
+  justify-content: flex-end;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 4rem);
+  mask-image: linear-gradient(to bottom, transparent, #000 4rem);
+}
+.context-after .context-rows.is-clipped {
+  -webkit-mask-image: linear-gradient(to top, transparent, #000 4rem);
+  mask-image: linear-gradient(to top, transparent, #000 4rem);
+}
+@container (min-width: 520px) {
+  .context-row .seg-content { grid-column: 2; }
+}
+
 .read-btn {
   display: grid;
   place-items: center;
@@ -417,7 +450,40 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   -webkit-tap-highlight-color: transparent;
 }
 .read-btn:hover { border-color: var(--learned); }
-.seg-mark.is-read .read-btn { background: var(--learned); border-color: var(--learned); }
+.seg-mark.is-read /* Context from the dafim either side: shaded, read-only. */
+.context {
+  margin: .25rem 0 1rem;
+  padding: 0 .9rem .5rem;
+  border: 1px dashed color-mix(in srgb, var(--muted) 40%, var(--surface));
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: .95em;
+}
+.context-after { margin: 1.5rem 0 .25rem; }
+.context-head, .context-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem 1rem; padding: .5rem 0 .25rem; }
+.context-head { font-weight: 600; }
+.context-foot { justify-content: flex-end; }
+.context-foot:has(> [hidden]:only-child), .context .link-button[hidden] { display: none; }
+
+/* At first only the passage next to the page break shows, cut off at the
+   far end with a fade: its end before the daf, its start after it. */
+.context-rows.is-clipped { display: flex; flex-direction: column; max-height: 13rem; overflow: hidden; }
+.context-rows.is-clipped > * { flex-shrink: 0; }
+.context-before .context-rows.is-clipped {
+  justify-content: flex-end;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 4rem);
+  mask-image: linear-gradient(to bottom, transparent, #000 4rem);
+}
+.context-after .context-rows.is-clipped {
+  -webkit-mask-image: linear-gradient(to top, transparent, #000 4rem);
+  mask-image: linear-gradient(to top, transparent, #000 4rem);
+}
+@container (min-width: 520px) {
+  .context-row .seg-content { grid-column: 2; }
+}
+
+.read-btn { background: var(--learned); border-color: var(--learned); }
 .unread-btn {
   width: 1.5rem;
   height: 1.5rem;
