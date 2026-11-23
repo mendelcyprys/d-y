@@ -15,6 +15,7 @@ Listed in the order of the Shas.
 
 | Daf | Kind | Topic | Status | File |
 | --- | --- | --- | --- | --- |
+| Arakhin 2a–4a | summary | The "הכל" statements: what each comes to include (the Mishnah's four verbs, then about twenty others), and the second pass, "כהנים לוים וישראלים — פשיטא!" | done | [arakhin-2a-4a-hakol.md](arakhin-2a-4a-hakol.md) |
 | Arakhin 2a | question (2) | Does every "הכל" come to include something? (נודרין: "נידרין איצטריך ליה"; נידרין: "תני והדר מפרש"; 3b's "פשיטא!" as the mirror image.) Is "הכל" a literary heading that the Mishnah then spells out? (the "הכל... חוץ מ..." pattern; Mishnat Eretz Yisrael; Bar-Ilan) | answered | [arakhin-2a-does-hakol-include.md](arakhin-2a-does-hakol-include.md) |
 | Arakhin 3a | question (5) | The kohen who isn't expert in nega'im: Rashi's wording, the Sifra's "shoteh", how the Rambam learns Ravina | answered | [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md) |
 | Arakhin 3b | question (2) | "הכל מעלין לארץ ישראל — לאתויי עבדים": Rashi here (the slave compels, only when he is being sold) against Rashi in Kesubos (the master compels a Hebrew slave); Ri and the Rambam. Where Rashi's narrower case comes from (Penei Yehoshua, the Ran via later sources, Rashi's two editions in the Shitah Mekubetzes) | answered | [arakhin-3b-hakol-maalin-avadim.md](arakhin-3b-hakol-maalin-avadim.md) |
@@ -35,7 +36,7 @@ These rules apply to both kinds:
     Follow-up questions on the same sugya go into the same file as the next
     numbered question.
   - A summary is filed under its range:
-    `<tractate>-<from>-<to>-<topic>.md`, e.g. `arakhin-2a-3b-hakol.md`.
+    `<tractate>-<from>-<to>-<topic>.md`, e.g. `arakhin-2a-4a-hakol.md`.
 - **Link the two kinds.** A summary lists the question files that fall within
   its range under "Related". Each of those question files links back to the
   summary.
@@ -89,14 +90,14 @@ status: answered
 ```markdown
 ---
 kind: summary
-daf: Arakhin 2a–3b
+daf: Arakhin 2a–4a
 topic: One line saying what the sugya is about
 written: YYYY-MM-DD
 updated: YYYY-MM-DD
 status: done
 ---
 
-# Arakhin 2a–3b: topic
+# Arakhin 2a–4a: topic
 
 **In brief.** What the sugya does and why, in a few sentences.
 

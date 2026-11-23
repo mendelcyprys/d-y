@@ -44,7 +44,7 @@ When asked to summarize a sugya, or to add a summary note for one, do these step
    - what wasn't checked.
 3. **Link it** to the question files in `research/` that fall within its range, and add a link back from each of them.
    Add the summary to the index.
-4. **Commit** (e.g. `Research: summary of Arakhin 2a–3b, the "hakol" statements`) and push.
+4. **Commit** (e.g. `Research: summary of Arakhin 2a–4a, the "hakol" statements`) and push.
 
 Sefaria endpoints for this. Wait about 2 s between requests.
 - Text: `GET https://www.sefaria.org/api/v3/texts/<Ref>?version=hebrew` (`hebrew|all` lists every version). Refs use

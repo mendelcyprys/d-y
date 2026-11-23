@@ -130,5 +130,6 @@ states the literary reading in general terms.
 
 ## Related
 
+- [arakhin-2a-4a-hakol.md](arakhin-2a-4a-hakol.md): summary of the whole "הכל" sugya, 2a–4a.
 - [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md): one of
   the "הכל" statements in the same section ("הכל רואין את הנגעים").

@@ -129,5 +129,6 @@ Yehoshua, the Rashash, the Melechet Shlomo and the Kesef Mishneh.
 
 ## Related
 
+- [arakhin-2a-4a-hakol.md](arakhin-2a-4a-hakol.md): summary of the whole "הכל" sugya, 2a–4a.
 - [arakhin-2a-does-hakol-include.md](arakhin-2a-does-hakol-include.md): the
   "הכל... לאתויי מאי" method this line belongs to.

@@ -154,3 +154,7 @@ which is also the Rosh's, is the defence of Rashi.
 - The Rosh's commentary on Negaim itself. I did not find it on Sefaria, so it
   is quoted through the Kesef Mishneh and the Tosafos Yom Tov.
 - Shitah Mekubetzes on Arakhin and the Bach's glosses.
+
+## Related
+
+- [arakhin-2a-4a-hakol.md](arakhin-2a-4a-hakol.md): summary of the whole "הכל" sugya, 2a–4a.
