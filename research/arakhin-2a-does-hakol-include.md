@@ -9,7 +9,7 @@ status: answered
 
 # Arakhin 2a: does every "הכל" come to include something?
 
-**Summary.** The whole section on 2a–3b runs on the question "הכל... לאתויי
+**Summary.** The whole section on 2a–4a runs on the question "הכל... לאתויי
 מאי?". The Gemara assumes that "הכל" in a Tannaitic statement adds a case that
 would otherwise be excluded. But it limits that assumption itself, on the
 Mishnah's own four verbs:
@@ -71,7 +71,7 @@ already explicit:
 - 2b: "אלא למאן דאמר כולן תשלומין לראשון — לאיתויי מאי?"
 - 3b: "ולמאן דתני עבדים בהדיא, לאתויי מאי?"
 
-**Not checked.** Places outside 2a–3b where the Gemara asks "הכל לאתויי מאי"
+**Not checked.** Places outside 2a–4a where the Gemara asks "הכל לאתויי מאי"
 and answers that it includes nothing, for example Chullin 2a on "הכל שוחטין".
 I also did not look for a Rishon who states the rule in general terms.
 
