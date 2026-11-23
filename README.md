@@ -51,7 +51,8 @@ behind.
 
 **Account and automatic backup.** Under **Progress → Your data**, create a
 free account (a username and password) and your progress, reads and notes
-back up automatically, a few seconds after each change. Log in on your phone
+back up automatically: a few seconds after you stop, at most every 20
+seconds while you keep going, and straight away when you leave the app. Log in on your phone
 and computer and they stay in step. Each backup sends only the dafim that
 changed, so it stays small however much you learn. A cloud icon in the top bar shows whether everything is backed up
 (a green tick), there are changes waiting (an orange dot), it's saving, or

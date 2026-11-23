@@ -25,7 +25,9 @@ the change is tested (tests pass and it's been checked in a browser), without as
 - Accounts and backup: `src/sync.js` talks to the Worker in `worker/` (deployed as `daf-yomi-sync` on the owner's
   Cloudflare account; address in `src/config.js`). Accounts are username + password (PBKDF2), with a recovery code.
   The record is synced as pieces, one per daf (`"Arakhin 5": { learned: { 14: date }, note, reads }`) plus `start`;
-  only changed pieces are sent (`dirtyKeys`), and only pieces changed since the last revision are fetched. A save names
+  only changed pieces are sent (`dirtyKeys`), and only pieces changed since the last revision are fetched. Sends are
+  paced by `nextSendAt()` (3 s pause, at most every 20 s) and go first; a fetch follows only if the reply shows another
+  device saved meanwhile. A save names
   each piece's `baseRev`; a conflict comes back with the stored piece, which is merged and resent. Settings are not
   synced. Server logic (`worker/src/{handler,accounts,store}.js`) is tested in Node on `node:sqlite` via
   `test/server.js`. Deploy with `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`;

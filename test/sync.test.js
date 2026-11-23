@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createSync, toItems, applyItem, mergeItem, dirtyKeys, itemHash, stableStringify, syncPayload,
+  createSync, toItems, applyItem, mergeItem, dirtyKeys, itemHash, stableStringify, syncPayload, nextSendAt,
 } from '../src/sync.js';
 import * as P from '../src/progress.js';
 import * as S from '../src/schedule.js';
@@ -260,4 +260,34 @@ test('wrong passwords and taken names come back as messages to show', async () =
   await assert.rejects(other.sync.login('mendel', 'wrong pass'), /don't match/);
   await assert.rejects(other.sync.signup('x', 'whatever1'), /Usernames/);
   assert.equal(other.sync.status().enabled, false);
+});
+
+test('changes go out after a short pause, at most every 20 seconds, never waiting more than 20', () => {
+  const s = 1000;
+  // A single change after a quiet spell: 3 seconds later.
+  assert.equal(nextSendAt({ now: 100 * s, lastSent: 0, firstUnsent: 100 * s }), 103 * s);
+  // Still tapping: each change pushes it back to 3 seconds after the latest...
+  assert.equal(nextSendAt({ now: 110 * s, lastSent: 0, firstUnsent: 100 * s }), 113 * s);
+  // ...but no later than 20 seconds after the first change waiting.
+  assert.equal(nextSendAt({ now: 119 * s, lastSent: 0, firstUnsent: 100 * s }), 120 * s);
+  // Just sent: the next send waits until 20 seconds after that one.
+  assert.equal(nextSendAt({ now: 101 * s, lastSent: 100 * s, firstUnsent: 101 * s }), 120 * s);
+});
+
+test('a usual backup is a single request', async () => {
+  const server = testServer();
+  const phone = device(server, sample());
+  await phone.sync.signup('mendel', 'correct horse');
+  phone.requests.length = 0;
+  await phone.change((r) => P.addRead(r, arakhin, 6, '6a:1', day('2026-11-24')));
+  assert.deepEqual(phone.requests.map((r) => r.method), ['POST']);
+
+  // If another device saved in between, the reply says so and we fetch.
+  const laptop = device(server);
+  await laptop.sync.login('mendel', 'correct horse');
+  await laptop.change((r) => P.addRead(r, arakhin, 7, '7a:1', day('2026-11-24')));
+  phone.requests.length = 0;
+  await phone.change((r) => P.addRead(r, arakhin, 6, '6a:2', day('2026-11-24')));
+  assert.deepEqual(phone.requests.map((r) => r.method), ['POST', 'GET']);
+  assert.equal(P.readCount(phone.record, arakhin, 7, '7a:1'), 1);
 });
