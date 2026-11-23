@@ -10,6 +10,7 @@
 //     notes: { 'Arakhin 2': { text: '...', updated: '2026-11-22T18:00:00.000Z' } },
 //     reads: { 'Arakhin 2': { '2a:3': ['2026-11-22', '2026-11-25'] } },  // passage -> each read
 //     bookmarks: { 'Arakhin 2': [{ passage: '2a:7', label: '', created, updated }] },  // passage null = the daf
+//     passageNotes: { 'Arakhin 2': { '2a:7': { text: '...', updated } } },  // notes on single passages
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
 //                 rashiView: 'shown' | 'buttons',
 //                 textWidth: null | pixels }
@@ -37,6 +38,7 @@ export function emptyState() {
     notes: {},
     reads: {},
     bookmarks: {},
+    passageNotes: {},
     settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null },
   };
 }
@@ -225,15 +227,50 @@ export function setNote(state, tractate, daf, text, now = new Date()) {
 }
 
 /** All notes in the order of the Shas: [{ tractate, daf, text, updated }]. */
+// Notes on single passages, as well as the note on the whole daf.
+
+export function getPassageNote(state, tractate, daf, passage) {
+  return state.passageNotes[noteKey(tractate, daf)]?.[passage]?.text || '';
+}
+
+export function setPassageNote(state, tractate, daf, passage, text, now = new Date()) {
+  const key = noteKey(tractate, daf);
+  if (text.trim()) {
+    (state.passageNotes[key] ??= {})[passage] = { text, updated: now.toISOString() };
+  } else if (state.passageNotes[key]) {
+    delete state.passageNotes[key][passage];
+    if (!Object.keys(state.passageNotes[key]).length) delete state.passageNotes[key];
+  }
+}
+
+/** Order passages as they come on the page: the daf itself (null) first, then 5a:1, 5a:2 ... 5a:12, 5b:1. */
+export function comparePassages(a, b) {
+  if (a === b) return 0;
+  if (a == null) return -1;
+  if (b == null) return 1;
+  const pa = /^(\d+)([ab]):(\d+)$/.exec(a);
+  const pb = /^(\d+)([ab]):(\d+)$/.exec(b);
+  if (pa && pb) return pa[1] - pb[1] || pa[2].localeCompare(pb[2]) || pa[3] - pb[3];
+  return a.localeCompare(b, undefined, { numeric: true });
+}
+
+/**
+ * Every note, in the order of the Shas: [{ tractate, daf, passage, text, updated }],
+ * with the note on the whole daf (passage null) before the notes on its passages.
+ */
 export function allNotes(state) {
   const order = new Map(TRACTATES.map((t, i) => [t.en, i]));
-  return Object.entries(state.notes)
-    .map(([key, note]) => {
-      const found = parseDafKey(key);
-      return found ? { ...found, text: note.text, updated: note.updated } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => order.get(a.tractate.en) - order.get(b.tractate.en) || a.daf - b.daf);
+  const notes = [];
+  for (const [key, note] of Object.entries(state.notes)) {
+    const found = parseDafKey(key);
+    if (found) notes.push({ ...found, passage: null, text: note.text, updated: note.updated });
+  }
+  for (const [key, passages] of Object.entries(state.passageNotes || {})) {
+    const found = parseDafKey(key);
+    if (!found) continue;
+    for (const [passage, note] of Object.entries(passages)) notes.push({ ...found, passage, text: note.text, updated: note.updated });
+  }
+  return notes.sort((a, b) => order.get(a.tractate.en) - order.get(b.tractate.en) || a.daf - b.daf || comparePassages(a.passage, b.passage));
 }
 
 // ---------------------------------------------------------------------------
@@ -392,6 +429,18 @@ export function normalizeState(raw) {
     }
   }
 
+  for (const [key, passages] of Object.entries(raw.passageNotes || {})) {
+    const found = parseDafKey(key);
+    if (!found || !passages || typeof passages !== 'object') continue;
+    for (const [passage, note] of Object.entries(passages)) {
+      if (passage.length > 60 || typeof note?.text !== 'string' || !note.text.trim()) continue;
+      (state.passageNotes[noteKey(found.tractate, found.daf)] ??= {})[passage] = {
+        text: note.text.slice(0, 20000),
+        updated: typeof note.updated === 'string' ? note.updated : new Date(0).toISOString(),
+      };
+    }
+  }
+
   for (const [key, list] of Object.entries(raw.bookmarks || {})) {
     const found = parseDafKey(key);
     if (!found || !Array.isArray(list)) continue;
@@ -447,6 +496,12 @@ export function mergeStates(current, incoming) {
     for (const [passage, dates] of Object.entries(passages)) {
       const mine = merged.reads[key]?.[passage] || [];
       if (dates.length > mine.length) (merged.reads[key] ??= {})[passage] = dates;
+    }
+  }
+  for (const [key, passages] of Object.entries(b.passageNotes)) {
+    for (const [passage, note] of Object.entries(passages)) {
+      const mine = merged.passageNotes[key]?.[passage];
+      if (!mine || note.updated > mine.updated) (merged.passageNotes[key] ??= {})[passage] = note;
     }
   }
   // Bookmarks: everything from both; for the same passage, the latest edit.

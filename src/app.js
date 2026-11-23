@@ -159,6 +159,24 @@ function syncStatusText(status) {
 
 // ---- Bookmarks, and the bookmarks-and-recent panel in the top bar.
 
+function noteIcon() {
+  return svg('svg', { viewBox: '0 0 24 24', width: '16', height: '16', 'aria-hidden': 'true' },
+    svg('path', { d: 'M5 4.5h14v11l-4 4H5Z' }), svg('path', { d: 'M15 19.5v-4h4' }), svg('path', { d: 'M8.5 9h7M8.5 12.5h4.5' }));
+}
+
+/** The note shown under a passage (click it to edit), or nothing. */
+function showPassageNote(slot, text) {
+  if (!text) {
+    if (slot.childElementCount) slot.replaceChildren();
+    return;
+  }
+  const current = slot.querySelector('.line-note-body');
+  if (current && current.textContent === text) return;
+  slot.replaceChildren(h('div', { class: 'line-note-view' },
+    h('p', { class: 'line-note-body', title: 'Click to edit' }, text),
+    h('button', { type: 'button', class: 'link-button note-edit' }, 'Edit')));
+}
+
 function ribbonIcon() {
   return svg('svg', { viewBox: '0 0 24 24', width: '16', height: '16', 'aria-hidden': 'true' },
     svg('path', { d: 'M7 4.5h10v15.5l-5-3.6-5 3.6Z' }));
@@ -739,7 +757,7 @@ function trackReading(page, { onPosition = () => {} } = {}) {
       tickSignature = signature;
       readingTicks.replaceChildren(...rows.map((row) => {
         const amudStart = row === row.closest('.amud-section').querySelector('.seg-row');
-        return h('span', { class: amudStart ? 'tick is-amud' : 'tick' });
+        return h('span', { class: amudStart ? 'tick is-amud' : 'tick' }, h('i', { class: 't-note' }));
       }));
       readingLabels.replaceChildren(...rows
         .filter((row) => row === row.closest('.amud-section').querySelector('.seg-row'))
@@ -751,6 +769,7 @@ function trackReading(page, { onPosition = () => {} } = {}) {
       if (tick.style.left !== left) tick.style.left = left;
       tick.classList.toggle('is-read', row.querySelector('.seg-mark').classList.contains('is-read'));
       tick.classList.toggle('is-bookmarked', row.querySelector('.seg-mark').classList.contains('is-bookmarked'));
+      tick.classList.toggle('is-noted', row.querySelector('.seg-mark').classList.contains('is-noted'));
     });
     for (const label of readingLabels.children) label.style.left = `${(ticks[Number(label.dataset.row)] * 100).toFixed(2)}%`;
   }
@@ -1344,6 +1363,13 @@ function textCard(index, { onReadThrough } = {}) {
       bm.setAttribute('aria-pressed', String(Boolean(bookmark)));
       bm.setAttribute('aria-label', bookmark ? `Remove the bookmark on ${name}` : `Bookmark ${name}`);
       bm.title = bookmark ? `Bookmarked${bookmark.label ? `: ${bookmark.label}` : ''}. Click to remove.` : 'Bookmark this passage';
+      const noteText = P.getPassageNote(state, tractate, daf, passage);
+      const noteButton = mark.querySelector('.note-btn');
+      mark.classList.toggle('is-noted', Boolean(noteText));
+      noteButton.setAttribute('aria-label', noteText ? `Edit your note on ${name}` : `Write a note on ${name}`);
+      noteButton.title = noteText ? 'Edit your note on this passage' : 'Write a note on this passage';
+      const slot = mark.closest('.seg-row').querySelector('.line-note');
+      if (slot && !slot.dataset.editing) showPassageNote(slot, noteText);
     }
 
     for (const section of body.querySelectorAll('.amud-section')) {
@@ -1379,6 +1405,47 @@ function textCard(index, { onReadThrough } = {}) {
     if (after > before) onReadThrough?.(after);
   }
 
+  // ---- Notes on single passages: written under the passage, saved as you type.
+  function openNoteEditor(slot) {
+    const passage = slot.dataset.passage;
+    const status = h('span', { class: 'small', 'aria-live': 'polite' });
+    let timer;
+    const area = h('textarea', {
+      rows: 3,
+      placeholder: 'A note on this passage: a question, the answer, a thought…',
+      'aria-label': `Your note on ${placeName(passage)}`,
+      value: P.getPassageNote(state, tractate, daf, passage),
+      oninput: () => {
+        status.textContent = '';
+        clearTimeout(timer);
+        timer = setTimeout(save, 500);
+      },
+    });
+    function save() {
+      clearTimeout(timer);
+      if (area.value === P.getPassageNote(state, tractate, daf, passage)) return;
+      P.setPassageNote(state, tractate, daf, passage, area.value);
+      persist();
+      status.textContent = 'Saved';
+      slot.closest('.seg-row').querySelector('.seg-mark').classList.toggle('is-noted', Boolean(area.value.trim()));
+    }
+    slot.saveNote = save;
+    slot.dataset.editing = 'true';
+    keepReadingPlace(() => slot.replaceChildren(h('div', { class: 'line-note-editor' },
+      area,
+      h('div', { class: 'line-note-actions' }, status, h('button', { type: 'button', class: 'btn note-done' }, 'Done')))));
+    slot.closest('.seg-row').querySelector('.note-btn').setAttribute('aria-expanded', 'true');
+    area.focus({ preventScroll: true });
+  }
+
+  function closeNoteEditor(slot) {
+    slot.saveNote?.();
+    delete slot.dataset.editing;
+    delete slot.saveNote;
+    slot.closest('.seg-row').querySelector('.note-btn').setAttribute('aria-expanded', 'false');
+    keepReadingPlace(updateReading);
+  }
+
   body.addEventListener('click', (event) => {
     const mark = event.target.closest('.seg-mark');
     if (mark && event.target.closest('.read-btn')) {
@@ -1387,6 +1454,17 @@ function textCard(index, { onReadThrough } = {}) {
     }
     if (mark && event.target.closest('.unread-btn')) {
       changeReads(() => P.removeRead(state, tractate, daf, mark.dataset.passage));
+      return;
+    }
+    const noteOpener = event.target.closest('.note-btn, .line-note-body, .note-edit');
+    if (noteOpener) {
+      const slot = noteOpener.closest('.seg-row').querySelector('.line-note');
+      if (slot.dataset.editing) closeNoteEditor(slot);
+      else openNoteEditor(slot);
+      return;
+    }
+    if (event.target.closest('.note-done')) {
+      closeNoteEditor(event.target.closest('.line-note'));
       return;
     }
     if (mark && event.target.closest('.bm-btn')) {
@@ -1575,8 +1653,11 @@ function sectionView(section) {
   },
   h('button', { type: 'button', class: 'read-btn' }),
   h('button', { type: 'button', class: 'unread-btn', 'aria-label': 'Take back one read', title: 'Take back one read', hidden: true }, '−'),
-  h('button', { type: 'button', class: 'bm-btn', 'aria-pressed': 'false' }, ribbonIcon()));
-  const row = (n, ...cells) => h('div', { class: 'seg-row' }, mark(n), h('div', { class: 'seg-content' }, cells));
+  h('button', { type: 'button', class: 'bm-btn', 'aria-pressed': 'false' }, ribbonIcon()),
+  h('button', { type: 'button', class: 'note-btn', 'aria-expanded': 'false' }, noteIcon()));
+  // Under each passage: its note, if it has one (and the editor while writing).
+  const noteSlot = (n) => h('div', { class: 'line-note', 'data-passage': `${section.label}:${n}` });
+  const row = (n, ...cells) => h('div', { class: 'seg-row' }, mark(n), h('div', { class: 'seg-content' }, cells, noteSlot(n)));
 
   // When both languages have the same number of passages, line them up side
   // by side; otherwise show each language as one block.
@@ -1664,9 +1745,9 @@ function notesCard(tractate, daf) {
     },
   });
   return h('section', { class: 'card notes-card' },
-    h('div', { class: 'card-title' }, h('h2', {}, h('label', { for: 'note-text' }, 'Your notes')), status),
+    h('div', { class: 'card-title' }, h('h2', {}, h('label', { for: 'note-text' }, 'Notes on this daf')), status),
     area,
-    h('p', { class: 'small' }, 'Saved on this device. ', h('a', { href: '#/notes' }, 'See all your notes'), '.'),
+    h('p', { class: 'small' }, 'For a note on one passage, use the note button beside it. ', h('a', { href: '#/notes' }, 'See all your notes'), '.'),
   );
 }
 
@@ -2112,22 +2193,29 @@ function notesPage() {
     oninput: () => draw(search.value.trim().toLowerCase()),
   });
 
+  // One card per daf: its own note first, then the notes on its passages.
   function draw(query) {
     const shown = query
       ? notes.filter((n) => n.text.toLowerCase().includes(query) || `${n.tractate.en} ${n.daf}`.toLowerCase().includes(query))
       : notes;
-    list.replaceChildren(...(shown.length
-      ? shown.map((n) => {
-        const index = S.indexFor(currentCycle(), n.tractate, n.daf);
+    const groups = [];
+    for (const n of shown) {
+      const last = groups[groups.length - 1];
+      if (last && last.tractate === n.tractate && last.daf === n.daf) last.notes.push(n);
+      else groups.push({ tractate: n.tractate, daf: n.daf, notes: [n] });
+    }
+    list.replaceChildren(...(groups.length
+      ? groups.map((g) => {
+        const index = S.indexFor(currentCycle(), g.tractate, g.daf);
         return h('article', { class: 'card note' },
-          h('div', { class: 'card-title' },
-            h('h2', {}, h('a', { href: dafHref(index) }, `${n.tractate.en} ${n.daf}`), h('span', { class: 'he', lang: 'he', dir: 'rtl' }, dafNameHe(index))),
-            h('span', { class: 'small' }, `Edited ${dates.full.format(new Date(n.updated))}`),
-          ),
-          h('p', { class: 'note-text' }, n.text),
-        );
+          h('h2', {}, h('a', { href: dafHref(index) }, `${g.tractate.en} ${g.daf}`), h('span', { class: 'he', lang: 'he', dir: 'rtl' }, dafNameHe(index))),
+          g.notes.map((n) => h('div', { class: 'note-entry' },
+            h('p', { class: 'note-where small' },
+              n.passage ? h('a', { href: dafHref(index, n.passage) }, placeName(n.passage)) : 'On the daf',
+              ` · edited ${dates.full.format(new Date(n.updated))}`),
+            h('p', { class: 'note-text' }, n.text))));
       })
-      : [h('p', { class: 'empty' }, notes.length ? 'No notes match.' : 'No notes yet. Write notes on any daf and they will all be collected here, in the order of the Shas.')]));
+      : [h('p', { class: 'empty' }, notes.length ? 'No notes match.' : 'No notes yet. Write a note on a whole daf (beside the text) or on any passage (the note button beside it), and they will all be collected here, in the order of the Shas.')]));
   }
   draw('');
 

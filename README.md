@@ -49,8 +49,11 @@ behind.
   the ribbon beside any passage; add a label if you like. Bookmarked
   passages are marked on the reading bar, and bookmarks back up with your
   account. Recent stays on each device.
-- **Notes on every daf.** They save as you type. The Notes page collects them
-  all in the order of the Shas, with search.
+- **Notes on every daf, and on any passage.** Write general notes on the
+  daf beside the text, or tap the note button beside a passage to write a
+  note right under it. They save as you type. The Notes page collects them
+  all in the order of the Shas, each daf's note followed by its passage
+  notes (each one a link straight to its passage), with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a
   month ago, so you can go back over it.
 - **Progress.** A daf-by-daf grid for each tractate, a count of days in a row,

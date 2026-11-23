@@ -255,6 +255,20 @@ p { margin: 0 0 .75rem; }
 .reading-ticks .tick.is-read { background: var(--learned); }
 .reading-ticks .tick.is-amud { top: 9px; height: 16px; background: var(--accent); }
 .reading-ticks .tick.is-amud.is-read { background: var(--learned); }
+/* A passage with a note: a little blue dot just under the track. */
+.reading-ticks .t-note {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--today);
+  transform: translateX(-50%);
+}
+.reading-ticks .tick.is-amud .t-note { top: 14px; }
+.reading-ticks .tick.is-noted .t-note { display: block; }
 /* A bookmarked passage: a little ribbon above its tick. */
 .reading-ticks .tick.is-bookmarked::before {
   content: "";
@@ -695,6 +709,42 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 .seg-mark.is-bookmarked .bm-btn svg { fill: currentColor; }
 @media (hover: none) { .bm-btn { opacity: .35; } }
 
+/* Note button beside a passage, like the bookmark ribbon. */
+.note-btn {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--today);
+  cursor: pointer;
+  opacity: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.note-btn svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.seg-row:hover .note-btn, .seg-mark:focus-within .note-btn, .note-btn[aria-expanded="true"] { opacity: .75; }
+.seg-mark.is-noted .note-btn { opacity: 1; }
+.seg-mark.is-noted .note-btn svg path:first-child { fill: color-mix(in srgb, var(--today) 22%, transparent); }
+@media (hover: none) { .note-btn { opacity: .35; } }
+
+/* A note on a passage, under it, across the whole width. */
+.line-note { grid-column: 1 / -1; order: 4; }
+.line-note:empty { display: none; }
+.line-note-view, .line-note-editor {
+  margin-top: .35rem;
+  padding: .5rem .75rem;
+  border-left: 3px solid var(--today);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--today) 8%, var(--surface));
+}
+.line-note-view { display: flex; align-items: flex-start; gap: .75rem; }
+.line-note-body { flex: 1; margin: 0; white-space: pre-wrap; font-family: var(--font-en); cursor: text; }
+.line-note-editor textarea { width: 100%; min-height: 4.5rem; }
+.line-note-actions { display: flex; align-items: center; justify-content: flex-end; gap: .75rem; margin-top: .4rem; }
+
 /* The passage you've just jumped to. */
 .seg-row.is-target { animation: target-flash 2.2s ease-out; }
 @keyframes target-flash { from { background: var(--accent-soft); } to { background: transparent; } }
@@ -901,7 +951,10 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 .note h2 { display: flex; gap: .75rem; align-items: baseline; }
 .note h2 a { text-decoration: none; }
 .note .he { font-weight: 500; color: var(--muted); }
-.note-text { white-space: pre-wrap; margin: .5rem 0 0; font-family: var(--font-en); }
+.note-text { white-space: pre-wrap; margin: .25rem 0 0; font-family: var(--font-en); }
+.note-entry + .note-entry { margin-top: .9rem; padding-top: .75rem; border-top: 1px dashed var(--line); }
+.note-where { margin: .5rem 0 0; }
+.note-where a { font-weight: 700; text-decoration: none; }
 .empty { color: var(--muted); }
 
 /* ---- Schedule --------------------------------------------------------- */

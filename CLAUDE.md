@@ -39,6 +39,8 @@ The backup service's `ALLOWED_ORIGINS` (`worker/wrangler.toml`) must list every 
   synced. Server logic (`worker/src/{handler,accounts,store}.js`) is tested in Node on `node:sqlite` via
   `test/server.js`. Deploy with `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`;
   don't commit the account ID. Add a new `[[migrations]]` entry for any Durable Object class change.
+- Notes on single passages live in `passageNotes: { "Arakhin 5": { "5a:7": { text, updated } } }` (beside the daf's
+  own note in `notes`), and sync in the daf's piece; `allNotes()` lists both in page order.
 - Bookmarks live in the record (`bookmarks: { "Arakhin 5": [{ passage, label, created, updated }] }`, passage null =
   the daf) and sync inside the daf's piece. Recent dafim are device-only, in `localStorage['daf-yomi:recent']`.
   A link can name a passage: `#/daf/arakhin/5/5a:7` (jumps there once the text loads).
