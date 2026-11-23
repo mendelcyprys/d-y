@@ -19,7 +19,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="topbar">
-    <a class="brand" href="#/">
+    <a class="brand" href="#/" aria-label="Daf Yomi: your daf">
       <span class="brand-mark" lang="he" dir="rtl">דף יומי</span>
       <span class="brand-name">Daf Yomi</span>
     </a>
@@ -34,9 +34,16 @@
         <a href="#/notes" data-nav="notes">Notes</a>
         <a href="#/schedule" data-nav="schedule">Schedule</a>
       </nav>
-      <div class="sync-indicator" id="sync-indicator" hidden>
-        <button type="button" class="sync-button" id="sync-button" aria-haspopup="true" aria-expanded="false"></button>
-        <div class="sync-panel" id="sync-panel" hidden></div>
+      <div class="topbar-popup" id="marks-indicator">
+        <button type="button" class="icon-button" id="marks-button" aria-haspopup="true" aria-expanded="false"
+                aria-label="Bookmarks and recent dafim" title="Bookmarks and recent dafim">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M7 4.5h10v15.5l-5-3.6-5 3.6Z"/></svg>
+        </button>
+        <div class="topbar-panel marks-panel" id="marks-panel" hidden></div>
+      </div>
+      <div class="sync-indicator topbar-popup" id="sync-indicator" hidden>
+        <button type="button" class="sync-button icon-button" id="sync-button" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="sync-panel topbar-panel" id="sync-panel" hidden></div>
       </div>
     </div>
     <div class="reading-bar" id="reading-bar" hidden role="slider" tabindex="0" aria-label="Position in the daf"

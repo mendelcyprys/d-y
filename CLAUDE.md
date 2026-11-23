@@ -32,5 +32,8 @@ the change is tested (tests pass and it's been checked in a browser), without as
   synced. Server logic (`worker/src/{handler,accounts,store}.js`) is tested in Node on `node:sqlite` via
   `test/server.js`. Deploy with `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`;
   don't commit the account ID. Add a new `[[migrations]]` entry for any Durable Object class change.
+- Bookmarks live in the record (`bookmarks: { "Arakhin 5": [{ passage, label, created, updated }] }`, passage null =
+  the daf) and sync inside the daf's piece. Recent dafim are device-only, in `localStorage['daf-yomi:recent']`.
+  A link can name a passage: `#/daf/arakhin/5/5a:7` (jumps there once the text loads).
 - Save record changes with `persist()` (it tells the backup); save display-setting changes with `persistSettings()`, so
   the backup icon doesn't show unsaved changes that aren't backed up anyway.

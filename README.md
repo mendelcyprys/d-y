@@ -40,6 +40,13 @@ behind.
   marks the whole amud read at once. The top of the text shows how many
   times you've read the whole daf through, and reading every passage offers
   to mark the daf as learned.
+- **Bookmarks and recent dafim, one tap away.** The ribbon button in the top
+  bar opens Recent (the dafim you opened lately, each remembering the
+  passage you'd reached: tap one to go straight back there) and your
+  Bookmarks. "Bookmark this place" bookmarks the passage you're on, or tap
+  the ribbon beside any passage; add a label if you like. Bookmarked
+  passages are marked on the reading bar, and bookmarks back up with your
+  account. Recent stays on each device.
 - **Notes on every daf.** They save as you type. The Notes page collects them
   all in the order of the Shas, with search.
 - **Review (chazarah).** Shows what you learned yesterday, a week ago and a

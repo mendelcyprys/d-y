@@ -26,6 +26,7 @@ function sample() {
 
 test('a record splits into one piece per daf, plus the starting point', () => {
   const items = toItems(sample());
+  assert.deepEqual(Object.keys(syncPayload(sample())).sort(), ['bookmarks', 'learned', 'notes', 'reads', 'start', 'version']);
   assert.deepEqual(Object.keys(items).sort(), ['Arakhin 2', 'Arakhin 3', 'start']);
   assert.deepEqual(items['Arakhin 2'], {
     learned: { 14: '2026-11-22' },
@@ -290,4 +291,19 @@ test('a usual backup is a single request', async () => {
   await phone.change((r) => P.addRead(r, arakhin, 6, '6a:2', day('2026-11-24')));
   assert.deepEqual(phone.requests.map((r) => r.method), ['POST', 'GET']);
   assert.equal(P.readCount(phone.record, arakhin, 7, '7a:1'), 1);
+});
+
+test('bookmarks sync between devices, removals too', async () => {
+  const server = testServer();
+  const phone = device(server, sample());
+  await phone.sync.signup('mendel', 'correct horse');
+  const laptop = device(server);
+  await laptop.sync.login('mendel', 'correct horse');
+  await phone.change((r) => P.setBookmark(r, arakhin, 2, '2a:5', 'come back to this', new Date('2026-11-24T09:00:00Z')));
+  await laptop.sync.syncNow();
+  assert.equal(P.findBookmark(laptop.record, arakhin, 2, '2a:5').label, 'come back to this');
+  assert.equal(P.readCount(laptop.record, arakhin, 2, '2a:1'), 1); // the rest of the daf is untouched
+  await laptop.change((r) => P.removeBookmark(r, arakhin, 2, '2a:5'));
+  await phone.sync.syncNow();
+  assert.equal(P.findBookmark(phone.record, arakhin, 2, '2a:5'), null);
 });
