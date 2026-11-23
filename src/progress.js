@@ -11,6 +11,7 @@
 //     reads: { 'Arakhin 2': { '2a:3': ['2026-11-22', '2026-11-25'] } },  // passage -> each read
 //     bookmarks: { 'Arakhin 2': [{ passage: '2a:7', label: '', created, updated }] },  // passage null = the daf
 //     passageNotes: { 'Arakhin 2': { '2a:7': { text: '...', updated } } },  // notes on single passages
+//     recent: [{ index, passage, at }],  // dafim you spent time on lately, newest first
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
 //                 rashiView: 'shown' | 'buttons',
 //                 textWidth: null | pixels }
@@ -39,6 +40,7 @@ export function emptyState() {
     reads: {},
     bookmarks: {},
     passageNotes: {},
+    recent: [],
     settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null },
   };
 }
@@ -376,8 +378,10 @@ export function allBookmarks(state) {
 }
 
 // ---------------------------------------------------------------------------
-// Recently opened dafim (kept on each device, not backed up): the newest
-// first, each with the passage you'd reached.
+// Recent dafim: the ones you spent time on lately (the app counts a visit
+// after 20 seconds), newest first, each with the passage you'd reached.
+// They're part of your record, so they back up and follow you between
+// devices: pick up on the computer where you stopped on the phone.
 
 export const RECENT_MAX = 10;
 
@@ -386,6 +390,15 @@ export function addRecent(list, { index, passage, at }) {
   const old = list.find((r) => r.index === index);
   const entry = { index, passage: passage ?? old?.passage ?? null, at };
   return [entry, ...list.filter((r) => r.index !== index)].slice(0, RECENT_MAX);
+}
+
+/** Two lists of recent dafim as one: for each daf the latest visit, newest first. */
+export function mergeRecent(a = [], b = []) {
+  const latest = new Map();
+  for (const r of [...a, ...b]) {
+    if (!latest.has(r.index) || r.at > latest.get(r.index).at) latest.set(r.index, r);
+  }
+  return [...latest.values()].sort((x, y) => y.at - x.at).slice(0, RECENT_MAX);
 }
 
 // ---------------------------------------------------------------------------
@@ -439,6 +452,12 @@ export function normalizeState(raw) {
         updated: typeof note.updated === 'string' ? note.updated : new Date(0).toISOString(),
       };
     }
+  }
+
+  if (Array.isArray(raw.recent)) {
+    state.recent = mergeRecent(raw.recent.filter((r) => Number.isInteger(r?.index) && r.index >= 0 && r.index < 1e6
+      && Number.isFinite(r.at) && (r.passage == null || (typeof r.passage === 'string' && r.passage.length <= 60)))
+      .map((r) => ({ index: r.index, passage: r.passage ?? null, at: r.at })));
   }
 
   for (const [key, list] of Object.entries(raw.bookmarks || {})) {
@@ -513,6 +532,7 @@ export function mergeStates(current, incoming) {
       else if (bookmark.updated > mine[i].updated) mine[i] = bookmark;
     }
   }
+  merged.recent = mergeRecent(merged.recent, b.recent);
   if (!merged.start) merged.start = b.start;
   return merged;
 }

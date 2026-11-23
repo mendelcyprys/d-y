@@ -18,7 +18,7 @@
 export const MAX_BYTES = 1_900_000;
 const MAX_ITEMS = 2000;
 const MAX_ITEM_BYTES = 200_000;
-const ITEM_KEY = /^(start|[A-Za-z][A-Za-z ]{1,30} \d{1,3})$/;
+const ITEM_KEY = /^(start|recent|[A-Za-z][A-Za-z ]{1,30} \d{1,3})$/;
 
 function corsHeaders(origin, allowed) {
   const list = String(allowed || '').split(',').map((s) => s.trim()).filter(Boolean);

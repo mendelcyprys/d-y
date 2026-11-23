@@ -3,8 +3,8 @@
 //
 // You create an account (username and password) and log in on each device.
 // Your record is backed up in pieces: one per daf you've touched ("Arakhin 5":
-// when you learned it, your note, your passage reads) plus your starting
-// point. Only the pieces that changed are sent: a few seconds after you stop,
+// when you learned it, your notes, reads and bookmarks), plus your starting
+// point and your recent dafim. Only the pieces that changed are sent: a few seconds after you stop,
 // but at most once every 20 seconds (and straight away when you leave the
 // app), usually in a single request. When the app opens, comes back into view
 // or comes back online, it asks only for the pieces changed since it last
@@ -36,8 +36,8 @@ const CLOSING_BYTES = 60_000; // the most a browser will send while a page close
 
 /** The parts of your record that are synced. */
 export function syncPayload(state) {
-  const { version, start, learned, notes, reads, bookmarks, passageNotes } = state;
-  return { version, start, learned, notes, reads, bookmarks, passageNotes };
+  const { version, start, learned, notes, reads, bookmarks, passageNotes, recent } = state;
+  return { version, start, learned, notes, reads, bookmarks, passageNotes, recent };
 }
 
 /** JSON with object keys in a fixed order, so equal values always match. */
@@ -72,6 +72,7 @@ export const itemHash = (value) => hashString(stableStringify(value ?? null));
 export function toItems(state) {
   const items = {};
   if (state.start) items.start = { ...state.start };
+  if (state.recent?.length) items.recent = { visits: state.recent };
   const piece = (key) => (items[key] ??= {});
   for (const [key, date] of Object.entries(state.learned)) {
     const [cycle, tractate, daf] = key.split('/');
@@ -88,6 +89,10 @@ export function toItems(state) {
 export function applyItem(state, key, value) {
   if (key === 'start') {
     state.start = value || null;
+    return;
+  }
+  if (key === 'recent') {
+    state.recent = value?.visits || [];
     return;
   }
   const m = /^(.+) (\d+)$/.exec(key);
