@@ -192,6 +192,19 @@ p { margin: 0 0 .75rem; }
 .reading-ticks .tick.is-read { background: var(--learned); }
 .reading-ticks .tick.is-amud { top: 9px; height: 16px; background: var(--accent); }
 .reading-ticks .tick.is-amud.is-read { background: var(--learned); }
+/* A read passage also gets a green dot on the track, so it's easy to spot. */
+.reading-ticks .tick.is-read::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--bg);
+  border-radius: 50%;
+  background: var(--learned);
+  transform: translate(-50%, -50%);
+}
 .reading-head {
   position: absolute;
   top: 8px;
