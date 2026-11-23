@@ -1,0 +1,7 @@
+# The Daf Yomi app itself, served from Cloudflare (see site/worker.js).
+# Deploy from the project folder with `npm run deploy:site`.
+name = "daf-yomi"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+preview_urls = false

@@ -5,6 +5,11 @@ Run with `npm start` (python http.server on :8000). Test with `npm test` (node:t
 Published by GitHub Pages from `main` (https://mendelcyprys.github.io/d-y/): work on a branch and open a pull request
 into `main`; merging it puts the change live. The owner has asked for pull requests to be merged straight away once
 the change is tested (tests pass and it's been checked in a browser), without asking first.
+The same app is also served from Cloudflare at https://daf-yomi.mmcyprys.workers.dev by the Worker in `site/`, which
+doesn't update itself: after merging an app change, run `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run
+deploy:site` from `main`. (Cloudflare Pages and Workers static-asset uploads fail from cloud sessions, because the
+network proxy replaces their upload token with the API token; packing the files into the Worker avoids that.)
+The backup service's `ALLOWED_ORIGINS` (`worker/wrangler.toml`) must list every address the app is served from.
 
 - Keep logic that doesn't need the DOM in `src/schedule.js` / `src/progress.js` / `src/reading.js` and cover it with
   tests in `test/`.
