@@ -147,6 +147,8 @@ is "כהנים איצטריכא ליה": one might have thought them exempt.
   lines 19–20.
 - [arakhin-3b-mochrin-leolam.md](arakhin-3b-mochrin-leolam.md): section 3, the
   shofar line ("כהנים ולוים מוכרין לעולם").
+- [arakhin-4a-ben-buchri.md](arakhin-4a-ben-buchri.md): section 3, the last
+  line (Ben Buchri).
 - Parallel sugyos: Kesubos 110b, Temurah 2a–3a, Menachos 93a, Chagigah 2a–4b,
   Shevuos 6a, Rosh Hashanah 29a, Menachos 46b.
 

@@ -20,6 +20,7 @@ Listed in the order of the Shas.
 | Arakhin 3a | question (5) | The kohen who isn't expert in nega'im: Rashi's wording, the Sifra's "shoteh", how the Rambam learns Ravina | answered | [arakhin-3a-non-expert-kohen.md](arakhin-3a-non-expert-kohen.md) |
 | Arakhin 3b | question (2) | "הכל מעלין לארץ ישראל — לאתויי עבדים": Rashi here (the slave compels, only when he is being sold) against Rashi in Kesubos (the master compels a Hebrew slave); Ri and the Rambam. Where Rashi's narrower case comes from (Penei Yehoshua, the Ran via later sources, Rashi's two editions in the Shitah Mekubetzes) | answered | [arakhin-3b-hakol-maalin-avadim.md](arakhin-3b-hakol-maalin-avadim.md) |
 | Arakhin 3b | question (1) | "כהנים ולוים מוכרין לעולם": Rashi on 3b (even in the Yovel year) against Rashi on 33b, Tosafos, the Rambam, the Kesef Mishneh, Yachin and the Meiri ("even close to Yovel", or "מוכרין" said only alongside the other phrases) | answered | [arakhin-3b-mochrin-leolam.md](arakhin-3b-mochrin-leolam.md) |
+| Arakhin 4a | question (1) | Ben Buchri and "הכל מעריכין — כהנים": chullin in the Azarah ("מסר לצבור"), and Abaye's objection that "וכל ערכך יהיה בשקל הקדש" is already used for the one-sela minimum | answered | [arakhin-4a-ben-buchri.md](arakhin-4a-ben-buchri.md) |
 
 Status is one of:
 - `open`
