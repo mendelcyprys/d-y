@@ -93,6 +93,12 @@ function persist() {
   sync.changed(state);
 }
 
+/** Save display settings only: they stay on this device, so there's nothing to back up. */
+function persistSettings() {
+  saveState(state);
+  updateStorageWarning();
+}
+
 // ---------------------------------------------------------------------------
 // Automatic backup (see src/sync.js and worker/)
 
@@ -141,8 +147,123 @@ function syncStatusText(status) {
   }
 }
 
+// ---- The backup icon in the top bar, and the panel it opens.
+
+const syncIndicator = document.getElementById('sync-indicator');
+const syncButton = document.getElementById('sync-button');
+const syncPanel = document.getElementById('sync-panel');
+
+const SVG = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs = {}, ...children) {
+  const el = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  el.append(...children);
+  return el;
+}
+
+const CLOUD = 'M17.5 19H7.2a4.7 4.7 0 0 1-.7-9.35A6.2 6.2 0 0 1 18.4 9.2 4.9 4.9 0 0 1 17.5 19Z';
+const ICON_MARKS = {
+  saved: () => [svg('path', { d: 'M9.2 14.2l2 2 3.8-3.9' })],
+  pending: () => [svg('circle', { class: 'mark-dot', cx: '19', cy: '6.5', r: '3.4' })],
+  syncing: () => [svg('g', { class: 'mark-spin' }, svg('path', { d: 'M9.6 13.6a2.6 2.6 0 0 1 4.6-1.4' }), svg('path', { d: 'M14.4 15.4a2.6 2.6 0 0 1-4.6 1.4' }), svg('path', { d: 'M14.4 10.6v1.8h-1.8' }), svg('path', { d: 'M9.6 18.4v-1.8h1.8' }))],
+  offline: () => [svg('path', { d: 'M4 4.5l16 15' })],
+  error: () => [svg('path', { d: 'M12.1 10.6v3.2' }), svg('path', { d: 'M12.1 16.4v.1' })],
+  off: () => [svg('path', { d: 'M12.1 16.6v-4.8' }), svg('path', { d: 'M9.8 13.8l2.3-2.3 2.3 2.3' })],
+};
+
+function iconState(status) {
+  if (status.signedOut) return 'error';
+  if (!status.enabled) return 'off';
+  return { saved: 'saved', pending: 'pending', syncing: 'syncing', offline: 'offline', error: 'error' }[status.state] || 'pending';
+}
+
+/** "Arakhin 5", "Arakhin 5 and Arakhin 6", "Arakhin 5, Arakhin 6 and 3 more". */
+function describeUnsaved(keys) {
+  const names = keys.map((k) => (k === 'start' ? 'your starting point' : k));
+  if (names.length <= 2) return names.join(' and ');
+  return `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+}
+
+// `detail` lists which dafim are waiting; that means checking every daf, so
+// it's only done when the panel is open, not on every change.
+function syncSummary(status, { detail = false } = {}) {
+  const unsaved = detail ? sync.unsavedKeys() : status.state === 'pending' ? ['?'] : [];
+  const waiting = !unsaved.length ? '' : detail ? `Not backed up yet: ${describeUnsaved(unsaved)}.` : 'Some changes are not backed up yet.';
+  if (status.signedOut) return { title: 'Logged out on this device', text: 'Log in again to keep backing up. Your progress here is safe.' };
+  if (!status.enabled) return { title: 'Not backed up', text: 'Your progress is only saved on this device. Create a free account to back it up and use it on your other devices.' };
+  switch (status.state) {
+    case 'syncing': return { title: 'Backing up…', text: waiting };
+    case 'offline': return { title: "You're offline", text: unsaved.length ? `${waiting} It will back up when you're back online.` : detail ? 'Everything was backed up before you went offline.' : "It will back up when you're back online." };
+    case 'error': return { title: "Couldn't back up", text: `${status.message || ''} ${waiting} It will try again.`.trim() };
+    default:
+      if (unsaved.length) return { title: 'Changes not backed up yet', text: `${waiting} Backing up in a moment.` };
+      return { title: 'All changes backed up', text: status.lastSynced ? `Last backed up ${minutesAgo(status.lastSynced)}.` : '' };
+  }
+}
+
+function closeSyncPanel() {
+  syncPanel.hidden = true;
+  syncButton.setAttribute('aria-expanded', 'false');
+}
+
+function goToAccount() {
+  closeSyncPanel();
+  const scroll = () => document.querySelector('.data-card')?.scrollIntoView({ behavior: smooth(), block: 'start' });
+  if (parseRoute().view === 'progress') scroll();
+  else {
+    location.hash = '#/progress';
+    setTimeout(scroll, 80);
+  }
+}
+
+function drawSyncPanel() {
+  const status = sync.status();
+  const { title, text } = syncSummary(status, { detail: true });
+  syncPanel.replaceChildren(
+    h('p', { class: 'sync-panel-title' }, title),
+    text ? h('p', { class: 'small' }, text) : null,
+    h('div', { class: 'sync-panel-actions' },
+      status.enabled ? h('button', { type: 'button', class: 'btn', onclick: () => sync.syncNow() }, 'Back up now') : null,
+      h('button', { type: 'button', class: 'link-button', onclick: goToAccount },
+        status.enabled ? 'Account' : status.signedOut ? 'Log in' : 'Create an account'),
+    ),
+  );
+}
+
+syncButton.addEventListener('click', () => {
+  if (!syncPanel.hidden) {
+    closeSyncPanel();
+    return;
+  }
+  drawSyncPanel();
+  syncPanel.hidden = false;
+  syncButton.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('click', (event) => {
+  if (!syncIndicator.contains(event.target)) closeSyncPanel();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !syncPanel.hidden) {
+    closeSyncPanel();
+    syncButton.focus();
+  }
+});
+
+function drawSyncIcon(status) {
+  const state = iconState(status);
+  syncIndicator.hidden = false;
+  syncIndicator.dataset.state = state;
+  syncButton.replaceChildren(svg('svg', { viewBox: '0 0 24 24', width: '24', height: '24', 'aria-hidden': 'true' },
+    svg('path', { class: 'cloud', d: CLOUD }), ...ICON_MARKS[state]()));
+  const { title, text } = syncSummary(status);
+  syncButton.setAttribute('aria-label', `Backup: ${title}`);
+  syncButton.title = [title, text].filter(Boolean).join('. ');
+  if (!syncPanel.hidden) drawSyncPanel();
+}
+
 function showSyncStatus(status) {
   syncStatus = status;
+  drawSyncIcon(status);
   const footer = document.getElementById('sync-footer');
   const text = syncStatusText(status);
   if (text) footer.replaceChildren(text);
@@ -639,7 +760,7 @@ function resizeHandle(layout, column) {
     state.settings.textWidth = width == null ? null : clamp(width);
     applyTextWidth(layout);
     handle.setAttribute('aria-valuenow', String(Math.round(column.getBoundingClientRect().width)));
-    if (save) persist();
+    if (save) persistSettings();
   }
 
   handle.addEventListener('pointerdown', (event) => {
@@ -655,7 +776,7 @@ function resizeHandle(layout, column) {
     const end = () => {
       handle.removeEventListener('pointermove', move);
       layout.classList.remove('is-resizing');
-      persist();
+      persistSettings();
     };
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', end, { once: true });
@@ -924,7 +1045,7 @@ function textCard(index, { onReadThrough } = {}) {
     title: 'Show Rashi beside the Gemara',
     onclick: () => {
       settings.rashi = !settings.rashi;
-      persist();
+      persistSettings();
       keepReadingPlace(() => { body.dataset.rashi = settings.rashi ? 'on' : 'off'; });
       rashiButton.setAttribute('aria-pressed', String(settings.rashi));
       scriptButton.hidden = !settings.rashi;
@@ -942,7 +1063,7 @@ function textCard(index, { onReadThrough } = {}) {
     title: 'Show Rashi in Rashi script, as in a printed Gemara',
     onclick: () => {
       settings.rashiScript = !settings.rashiScript;
-      persist();
+      persistSettings();
       keepReadingPlace(() => { body.dataset.rashiScript = settings.rashiScript ? 'on' : 'off'; });
       scriptButton.setAttribute('aria-pressed', String(settings.rashiScript));
     },
@@ -957,7 +1078,7 @@ function textCard(index, { onReadThrough } = {}) {
     'aria-pressed': settings.layout === value ? 'true' : 'false',
     onclick: (event) => {
       settings.layout = value;
-      persist();
+      persistSettings();
       keepReadingPlace(() => { body.dataset.layout = value; });
       for (const b of event.currentTarget.parentElement.children) b.setAttribute('aria-pressed', b === event.currentTarget ? 'true' : 'false');
     },
@@ -965,7 +1086,7 @@ function textCard(index, { onReadThrough } = {}) {
 
   const resize = (step) => () => {
     settings.fontScale = Math.min(1.8, Math.max(0.8, Math.round((settings.fontScale + step) * 10) / 10));
-    persist();
+    persistSettings();
     keepReadingPlace(() => body.style.setProperty('--scale', settings.fontScale));
   };
 

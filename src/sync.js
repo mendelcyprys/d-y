@@ -459,5 +459,7 @@ export function createSync({
     start, syncNow, changed, available, status,
     signup, login, recover, changePassword, logout, deleteAccount, acknowledgeRecoveryCode,
     hasUnsavedChanges: () => Boolean(account.token) && unsavedPieces().length > 0,
+    /** Which pieces have changes not yet backed up: daf names like "Arakhin 5", and "start". */
+    unsavedKeys: () => (account.token ? unsavedPieces().map((p) => p.key) : []),
   };
 }
