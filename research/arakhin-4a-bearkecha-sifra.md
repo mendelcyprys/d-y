@@ -112,3 +112,6 @@ Sefaria links to 4b:4–5.
 
 - [arakhin-2a-4a-hakol.md](arakhin-2a-4a-hakol.md): the sugya that ends just
   before this baraisa (4a:15).
+- [arakhin-4b-erech-satum-hasagas-yad.md](arakhin-4b-erech-satum-hasagas-yad.md):
+  the Gemara's analysis of "ערך סתום" (4b:6–11), and whether it is judged by
+  hasagas yad.
