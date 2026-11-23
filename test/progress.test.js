@@ -131,6 +131,7 @@ test('saved state is cleaned up when loaded', () => {
   assert.equal(P.normalizeState({ settings: { rashiView: 'buttons' } }).settings.rashiView, 'buttons');
   assert.equal(P.normalizeState({ settings: { rashiView: 'sideways' } }).settings.rashiView, 'shown');
   assert.deepEqual(state.bookmarks, {});
+  assert.deepEqual(state.passageNotes, {});
   assert.equal(P.normalizeState({ settings: { textWidth: 1100.4 } }).settings.textWidth, 1100);
   assert.equal(P.normalizeState({ settings: { textWidth: 50 } }).settings.textWidth, null);
   assert.equal(P.normalizeState({ settings: { textWidth: 'wide' } }).settings.textWidth, null);
@@ -250,4 +251,37 @@ test('recent dafim: newest first, no repeats, keeping the passage you reached', 
   assert.equal(list[0].passage, '2b:1');
   for (let i = 10; i < 30; i++) list = P.addRecent(list, { index: i, at: i });
   assert.equal(list.length, P.RECENT_MAX);
+});
+
+test('notes on single passages, listed with the daf notes in page order', () => {
+  const state = P.emptyState();
+  const berakhot = S.findTractate('Berakhot');
+  P.setPassageNote(state, arakhin, 5, '5b:1', 'b1');
+  P.setPassageNote(state, arakhin, 5, '5a:12', 'a12');
+  P.setPassageNote(state, arakhin, 5, '5a:7', 'a7');
+  P.setNote(state, arakhin, 5, 'on the whole daf');
+  P.setPassageNote(state, berakhot, 2, '2a:1', 'first');
+  assert.equal(P.getPassageNote(state, arakhin, 5, '5a:7'), 'a7');
+  assert.deepEqual(P.allNotes(state).map((n) => `${n.tractate.en} ${n.daf} ${n.passage}: ${n.text}`), [
+    'Berakhot 2 2a:1: first',
+    'Arakhin 5 null: on the whole daf',
+    'Arakhin 5 5a:7: a7',
+    'Arakhin 5 5a:12: a12',
+    'Arakhin 5 5b:1: b1',
+  ]);
+  P.setPassageNote(state, arakhin, 5, '5a:7', '  ');
+  assert.equal(P.getPassageNote(state, arakhin, 5, '5a:7'), '');
+  for (const p of ['5a:12', '5b:1']) P.setPassageNote(state, arakhin, 5, p, '');
+  assert.equal(state.passageNotes['Arakhin 5'], undefined);
+});
+
+test('passage notes are cleaned up when loaded and combined on import', () => {
+  const loaded = P.normalizeState({ passageNotes: { 'Arakhin 5': { '5a:7': { text: 'kept', updated: '2026-11-22T00:00:00Z' }, '5a:8': { text: '  ' }, '5a:9': 'junk' }, 'Nowhere 2': { '1': { text: 'x' } } } });
+  assert.deepEqual(loaded.passageNotes, { 'Arakhin 5': { '5a:7': { text: 'kept', updated: '2026-11-22T00:00:00Z' } } });
+  const other = P.emptyState();
+  P.setPassageNote(other, arakhin, 5, '5a:7', 'newer', new Date('2026-11-25T00:00:00Z'));
+  P.setPassageNote(other, arakhin, 6, '6a:1', 'only there');
+  const merged = P.mergeStates(loaded, other);
+  assert.equal(P.getPassageNote(merged, arakhin, 5, '5a:7'), 'newer');
+  assert.equal(P.getPassageNote(merged, arakhin, 6, '6a:1'), 'only there');
 });

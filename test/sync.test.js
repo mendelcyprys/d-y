@@ -26,7 +26,7 @@ function sample() {
 
 test('a record splits into one piece per daf, plus the starting point', () => {
   const items = toItems(sample());
-  assert.deepEqual(Object.keys(syncPayload(sample())).sort(), ['bookmarks', 'learned', 'notes', 'reads', 'start', 'version']);
+  assert.deepEqual(Object.keys(syncPayload(sample())).sort(), ['bookmarks', 'learned', 'notes', 'passageNotes', 'reads', 'start', 'version']);
   assert.deepEqual(Object.keys(items).sort(), ['Arakhin 2', 'Arakhin 3', 'start']);
   assert.deepEqual(items['Arakhin 2'], {
     learned: { 14: '2026-11-22' },
@@ -306,4 +306,19 @@ test('bookmarks sync between devices, removals too', async () => {
   await laptop.change((r) => P.removeBookmark(r, arakhin, 2, '2a:5'));
   await phone.sync.syncNow();
   assert.equal(P.findBookmark(phone.record, arakhin, 2, '2a:5'), null);
+});
+
+test('notes on passages sync between devices, and clearing one carries over', async () => {
+  const server = testServer();
+  const phone = device(server, sample());
+  await phone.sync.signup('mendel', 'correct horse');
+  const laptop = device(server);
+  await laptop.sync.login('mendel', 'correct horse');
+  await phone.change((r) => P.setPassageNote(r, arakhin, 2, '2a:3', 'Why kohanim first?', new Date('2026-11-24T09:00:00Z')));
+  await laptop.sync.syncNow();
+  assert.equal(P.getPassageNote(laptop.record, arakhin, 2, '2a:3'), 'Why kohanim first?');
+  assert.equal(P.getNote(laptop.record, arakhin, 2), 'Erech'); // the daf's own note is untouched
+  await laptop.change((r) => P.setPassageNote(r, arakhin, 2, '2a:3', ''));
+  await phone.sync.syncNow();
+  assert.equal(P.getPassageNote(phone.record, arakhin, 2, '2a:3'), '');
 });
