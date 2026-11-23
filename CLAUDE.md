@@ -11,6 +11,9 @@ Run with `npm start` (python http.server on :8000). Test with `npm test` (node:t
 - Sefaria texts are untrusted HTML: always render them through `textToFragment` in `src/sanitize.js`, never `innerHTML`.
 - Sefaria's calendar only lists Daf Yomi for cycle 14, so calendar lookups use the matching cycle-14 date.
 - Sefaria rate-limits (HTTP 429); avoid bursts of requests.
+- `booklets/arakhin/` builds the printable Mishnah Arakhin booklet (PDF). See its README; its `raw/`, `fonts/` and
+  `build/` folders are re-created by the scripts and not committed. Notes in `booklets/*/notes/` follow the same rules
+  as `research/`: work from the texts and say what the sources are.
 
 ## Examining a question on the text
 

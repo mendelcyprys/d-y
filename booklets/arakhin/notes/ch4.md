@@ -1,0 +1,30 @@
+# intro
+The opening mishnah gives the key to the whole perek in four short rules. Each "whose" refers to someone different:
+- **השג יד בנודר**: ability to pay is measured by the one who **pledged**.
+- **השנים בנידר**: age is the age of the one being **valued**.
+- **הערכים בנערך**: male or female also follows the one being **valued**.
+- **הערך בזמן הערך**: the age that counts is the one at the **time of the pledge**.
+
+The Mishnah calls the pledger "נודר" because the verse does: על פי אשר תשיג יד **הנודר** (Bartenura, Rambam). The perek ends with the precise counting of ages ("שנת ששים כלמטה ממנה").
+
+# 4:1
+A **poor man who pledged a rich man's *erech*** pays a poor man's *erech*, meaning according to his own means. A **rich man who pledged a poor man's *erech*** pays the full amount. Tosafos asks why the Mishnah lists "השנים בנידר" and "הערכים בנערך" separately rather than together. Boaz offers a striking general answer to this and to other unusual phrasings. The Mishnah was learned by heart **to a fixed melody** (Megillah 32a, "השונה בלא זמרה"). The wording was fitted to the tune and kept even where it seems clumsy, so that it would be remembered.
+
+# 4:2
+**Korbanos are different.** Someone who says "I take on the *korbanos* of this metzora" brings what **the metzora** owes. If the metzora is poor, that is a poor man's *korban*. If he is rich, a rich man's, even if the pledger is poor. The Gemara (quoted by Tosafos Yom Tov) derives this from **הוא** in ואם דל **הוא**: the Torah's leniency depends on the metzora himself. Rambam brings this ruling at the end of Hilchos Mechusrei Kaparah.
+
+**Rebbi** says the same applies to *arachin* when the case is truly similar. A poor man who pledges a rich man's *erech* pays by his own means only because the rich man owed nothing. He meant only "according to that man's age". But if a rich man said "ערכי עלי" and a poor man heard and said "**what he said is on me**", he has taken on the rich man's own obligation and pays a rich man's *erech*. If he cannot pay it all, he pays what he can and the rest stays a debt until he becomes rich (Rambam, Yachin). Rambam (and Hilchos Arachin 3) holds Rebbi is only **explaining** the Chachamim, not disagreeing. Ra'avad disagrees. Tosafos Yom Tov defends Rambam and suggests he did not have the Gemara's line "לרבנן כדאית להו".
+
+**Change of fortune.** If he was poor when he pledged and became rich before payment, he pays the rich *erech*, since now "his hand can reach". If he was rich and became poor, he also pays the rich *erech*, since his hand reached it at the time of the vow. Tosafos Yom Tov holds the deciding moment is **when the kohen assesses him** (יעריכנו), parallel to coming to beis din in *damim*. **R' Yehudah:** even if he was poor, became rich, and is poor again, he pays a rich man's *erech*. ואם **מך הוא** means he must be poor from start to finish. The halachah follows the Chachamim. Yachin adds that "הערך בזמן הערך" refers only to the **age** of the person valued, not to the pledger's wealth.
+
+# 4:3
+**Korbanos fix the moment of obligation.** If he was poor when he became obligated, he brings a poor man's *korban*. This holds even if his father was dying at the time and then left him ten thousand, or "his ship was at sea" and then came in with tens of thousands. Hekdesh has no claim on them. Bartenura and Rambam explain the ship case. The ship is not loaded with his **own** goods, since then he would already be rich. He has hired it out, and rent is due only at the end of the term. The ship itself does not make him rich either, because this Tanna holds that a man's means of livelihood is left to him (like the donkey-driver's donkey, 6:3). Rambam and Yachin note that this follows R' Eliezer in 6:3, and the halachah is not like him. Yachin adds that a ship does not count as a craftsman's tool in any case.
+
+# 4:4
+**Age follows the one valued.** A "child" (Bartenura: aged 20–60, whose *erech* is 50) who pledges an old man's *erech* pays an old man's. An old man who pledges a young man's *erech* pays the young man's. Yachin notes "child" and "old man" are not literal. It just means the pledger is younger or older than the one valued. **Sex follows the one valued.** A man who pledges a woman's *erech* pays a woman's, and a woman who pledges a man's pays a man's.
+
+**The time of the pledge.** If he pledged a child under five who has since passed five, or someone under twenty who has since passed twenty, he pays by the age at the time of the pledge: כערכך יקום. Tosafos Yom Tov asks why a verse about consecrated **fields** is used here. He answers that the phrase is redundant there, so it is applied to *arachin* of persons. Yachin adds that the rule works both ways, strict as well as lenient. For example, someone pledged at 59 still pays 50 after turning 60.
+
+**Day thirty** counts as below a month, so there is no *erech* at all. **The fifth, twentieth and sixtieth years** count as the age bracket below. The source is מבן ששים שנה **ומעלה**: one is "sixty" only once the sixtieth year is complete. The Mishnah asks: we treat the sixtieth year as "below" (stricter, because the 20–60 *erech* of 50 is higher than the over-60 *erech* of 15). Should we apply the same to years five and twenty, where "below" is **lenient**? The answer is the *gezeirah shavah* שנה–שנה, which applies both ways. Yachin explains why the *gezeirah shavah* overrides the logic of "lenient vs. strict". A *mah matzinu* (an inference from a parallel case) is human reasoning, so we would not learn a leniency from a stringency. A *gezeirah shavah* is received by tradition. Boaz develops this further from Rashi (Sukkah 31a, Rosh Hashanah 4a, Gittin 41b).
+
+**R' Elazar:** one moves up a bracket only a **month and a day** after the birthday. He learns this from "ומעלה" with *bechor*: פדויו מבן חודש (Bamidbar 18:16), or מבן חודש ומעלה said of the leviim (Bamidbar 3:15, Kesef Mishneh on Rashi). The halachah does not follow him. Tosafos Yom Tov proves from the Gemara that all agree "ומעלה" means at least **one day** beyond the birthday. That is why Rambam (Arachin 1) requires the 31st day for a one-month-old.

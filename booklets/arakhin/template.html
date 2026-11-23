@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mishnah Arakhin</title>
+<style>
+@font-face { font-family: 'Frank Ruhl Libre'; font-weight: 400; src: url('../fonts/fontsource-frank-ruhl-libre-5.3.0/package/files/frank-ruhl-libre-hebrew-400-normal.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+@font-face { font-family: 'Frank Ruhl Libre'; font-weight: 700; src: url('../fonts/fontsource-frank-ruhl-libre-5.3.0/package/files/frank-ruhl-libre-hebrew-700-normal.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+@font-face { font-family: 'Frank Ruhl Libre'; font-weight: 500; src: url('../fonts/fontsource-frank-ruhl-libre-5.3.0/package/files/frank-ruhl-libre-hebrew-500-normal.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+@font-face { font-family: 'Noto Rashi Hebrew'; font-weight: 400; src: url('../fonts/fontsource-noto-rashi-hebrew-5.3.0/package/files/noto-rashi-hebrew-hebrew-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Serif Hebrew'; font-weight: 400; src: url('../fonts/fontsource-noto-serif-hebrew-5.3.0/package/files/noto-serif-hebrew-hebrew-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Serif Hebrew'; font-weight: 700; src: url('../fonts/fontsource-noto-serif-hebrew-5.3.0/package/files/noto-serif-hebrew-hebrew-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-weight: 400; src: url('../fonts/fontsource-eb-garamond-5.3.0/package/files/eb-garamond-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-weight: 400; font-style: italic; src: url('../fonts/fontsource-eb-garamond-5.3.0/package/files/eb-garamond-latin-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-weight: 600; src: url('../fonts/fontsource-eb-garamond-5.3.0/package/files/eb-garamond-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-weight: 600; font-style: italic; src: url('../fonts/fontsource-eb-garamond-5.3.0/package/files/eb-garamond-latin-700-italic.woff2') format('woff2'); }
+
+:root {
+  --ink: #1d1a17;
+  --muted: #6d655c;
+  --accent: #872e1e;
+  --rule: #bda57a;
+  --note-bg: #f6f1e7;
+  --he: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif;
+  --en: 'EB Garamond', 'Frank Ruhl Libre', serif;
+}
+@page { size: Letter; margin: 0.62in 0.68in 0.72in 0.68in; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; padding: 0; background: #fff; color: var(--ink); }
+body { font-family: var(--en); font-size: 10.6pt; line-height: 1.42; }
+p { margin: 0 0 5pt; orphans: 2; widows: 2; }
+strong { font-weight: 600; }
+.hei { font-family: var(--he); font-size: 1.04em; unicode-bidi: isolate; }
+.hei .hei { font-size: 1em; }
+.he-cell { font-family: var(--he); direction: rtl; text-align: right; font-size: 11.5pt; white-space: nowrap; }
+
+/* ---------- title page ---------- */
+.title-page { height: 9.4in; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; break-after: page; }
+.tp-orn { width: 2.4in; border-top: 1.2pt solid var(--rule); border-bottom: 0.4pt solid var(--rule); height: 4pt; margin: 14pt auto; }
+.tp-he { font-family: var(--he); font-weight: 700; font-size: 58pt; line-height: 1.1; direction: rtl; color: var(--ink); }
+.tp-he-sub { font-family: var(--he); font-size: 17pt; direction: rtl; color: var(--accent); margin-top: 4pt; }
+.tp-en { font-size: 20pt; letter-spacing: 0.06em; margin-top: 18pt; font-variant: small-caps; }
+.tp-en-sub { font-size: 12pt; color: var(--muted); max-width: 5in; margin: 8pt auto 0; font-style: italic; }
+.tp-foot { margin-top: 0.9in; font-size: 10pt; color: var(--muted); line-height: 1.6; }
+
+/* ---------- front matter ---------- */
+.front h2, .part-title { text-align: center; }
+.front h2 { font-weight: 400; font-variant: small-caps; letter-spacing: 0.08em; font-size: 15pt; color: var(--accent); margin: 0 0 8pt; }
+.front h2 .hei { font-variant: normal; letter-spacing: 0; font-size: 1.1em; margin-left: 6pt; color: var(--ink); }
+.front section { break-after: page; }
+.front h3 { font-size: 11.5pt; font-weight: 600; margin: 12pt 0 4pt; color: var(--ink); }
+.front p, .front li { text-align: justify; hyphens: auto; }
+.front ul { margin: 0 0 6pt 14pt; padding: 0; }
+.front li { margin-bottom: 3pt; }
+.box { background: var(--note-bg); border-left: 2.2pt solid var(--accent); padding: 6pt 10pt; margin: 8pt 0; }
+table.t { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 10pt; }
+table.t th, table.t td { border-bottom: 0.5pt solid var(--rule); padding: 3pt 5pt; vertical-align: top; text-align: left; }
+table.t th { font-weight: 600; border-bottom: 1pt solid var(--accent); font-variant: small-caps; letter-spacing: 0.03em; }
+table.t td.num { text-align: center; font-variant-numeric: lining-nums; }
+dl.gloss { display: grid; grid-template-columns: 1.45in 1fr; column-gap: 10pt; row-gap: 3pt; margin: 4pt 0; }
+dl.gloss dt { font-family: var(--he); direction: rtl; text-align: right; font-size: 11.5pt; }
+dl.gloss dt span { display: block; font-family: var(--en); font-size: 8.8pt; color: var(--muted); font-style: italic; line-height: 1.1; margin-bottom: 2pt; }
+dl.gloss dd { margin: 0; }
+
+/* ---------- parts ---------- */
+.part { break-before: page; }
+.part-title { margin: 0.4in 0 14pt; }
+.he-title { font-family: var(--he); font-weight: 700; font-size: 30pt; direction: rtl; }
+.en-sub { font-variant: small-caps; letter-spacing: 0.08em; color: var(--accent); font-size: 12.5pt; margin-top: 2pt; }
+.lede { font-size: 10.4pt; color: var(--muted); text-align: justify; hyphens: auto; max-width: 6.2in; margin: 0 auto 12pt; font-style: italic; }
+
+/* ---------- verses ---------- */
+.passage { margin: 0 0 12pt; }
+.passage-head { display: flex; justify-content: space-between; align-items: baseline; direction: rtl; border-bottom: 1pt solid var(--rule); padding-bottom: 2pt; margin: 14pt 0 6pt; break-after: avoid; }
+.ph-he { font-family: var(--he); font-weight: 700; font-size: 15pt; color: var(--accent); }
+.ph-en { font-family: var(--en); direction: ltr; font-size: 10pt; font-weight: 400; color: var(--muted); font-style: italic; }
+.pasuk { font-family: 'Noto Serif Hebrew', var(--he); font-size: 13.4pt; line-height: 1.95; direction: rtl; text-align: justify; margin: 0 0 3pt; }
+.vn { font-family: var(--he); font-weight: 700; font-size: 8.5pt; color: var(--accent); vertical-align: 0.45em; margin-inline-end: 2.5pt; margin-inline-start: 3pt; }
+.ketiv { font-size: 70%; color: var(--muted); }
+.ps { font-size: 66%; color: var(--muted); margin: 0 4pt; }
+.vgroup { margin-bottom: 6pt; }
+
+/* ---------- notes ---------- */
+.note { direction: ltr; background: var(--note-bg); border-left: 2.2pt solid var(--accent); padding: 5pt 9pt 3pt; margin: 6pt 0 11pt; text-align: justify; hyphens: auto; font-size: 10.4pt; line-height: 1.4; }
+.note p { margin-bottom: 4pt; }
+.vnote { margin-top: 2pt; }
+.intro-note { border-left-color: var(--rule); margin-bottom: 14pt; }
+
+/* ---------- chapters ---------- */
+.perek { break-before: page; }
+.perek-head { text-align: center; margin: 0.1in 0 10pt; padding-bottom: 8pt; border-bottom: 1.2pt solid var(--rule); }
+.ph-ord { font-family: var(--he); color: var(--accent); font-size: 14pt; direction: rtl; }
+.ph-name { font-family: var(--he); font-weight: 700; font-size: 30pt; line-height: 1.15; direction: rtl; }
+.ph-meta { font-size: 9.6pt; color: var(--muted); margin-top: 4pt; letter-spacing: 0.02em; }
+.mishnah-block { margin: 0 0 6pt; }
+.m-head { display: flex; justify-content: space-between; align-items: baseline; direction: rtl; margin: 10pt 0 3pt; padding-top: 4pt; border-top: 0.5pt solid var(--rule); break-after: avoid; }
+.mh-he { font-family: var(--he); font-weight: 700; font-size: 13pt; color: var(--accent); }
+.mh-en { direction: ltr; font-size: 9pt; color: var(--muted); font-weight: 400; }
+.mh-en::before { content: ''; }
+.mishnah { font-family: var(--he); font-size: 14.6pt; line-height: 1.72; direction: rtl; text-align: justify; margin: 0 0 6pt; break-inside: avoid; }
+.mishnah .src, .bart .src { font-size: 75%; color: var(--muted); }
+.bart { font-family: 'Noto Rashi Hebrew', var(--he); font-size: 10.1pt; line-height: 1.55; direction: rtl; text-align: justify; column-count: 2; column-gap: 15pt; column-rule: 0.4pt solid var(--rule); margin: 0 0 4pt; }
+.bart b { font-family: var(--he); font-weight: 700; font-size: 10.6pt; }
+.bart-label { font-family: var(--he); font-weight: 700; color: var(--accent); font-size: 9.5pt; border: 0.6pt solid var(--accent); padding: 0 3pt; border-radius: 2pt; margin-inline-end: 3pt; }
+.dh::after { content: ' '; }
+.he-para { text-align: center; font-family: var(--he); font-size: 12pt; margin-top: 4pt; }
+</style>
+</head>
+<body>
+{{BODY}}
+</body>
+</html>

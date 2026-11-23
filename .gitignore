@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 *.log
+
+# booklets: downloaded texts, fonts and build output (re-created by the scripts)
+booklets/*/raw/
+booklets/*/fonts/
+booklets/*/build/

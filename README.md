@@ -70,6 +70,12 @@ difficult Rashi or a contradiction between sources. Others summarize a sugya. Ea
 note quotes its sources exactly. They are not part of the app; see
 [`research/README.md`](research/README.md) for the index.
 
+## Study booklets
+
+`booklets/arakhin/` holds a printable booklet for Arakhin: the Torah verses, and the whole
+Mishnah with Bartenura and notes. It contains the PDF and the scripts that build it; see
+[`booklets/arakhin/README.md`](booklets/arakhin/README.md).
+
 ## Development
 
 ```bash
