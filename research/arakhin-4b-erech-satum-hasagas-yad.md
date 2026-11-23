@@ -23,6 +23,10 @@ disagreement is over two other things.
   ("איכא דאמרי"): an unspecified erech *is* judged by hasagas yad. So the line
   Rashi is explaining is not the halacha according to the Rambam.
 
+Question 2: why the Rambam doesn't mention Tosafos' "ערך זכר" (five
+sela'im). The Minchas Chinuch says it is obvious ("וז"פ"): it is the Rambam's
+own rule, "the least erech his words cover", applied to males.
+
 ## The texts
 
 **Gemara, Arakhin 4b:6–11** (William Davidson):
@@ -145,6 +149,68 @@ version's hava amina. I have not found a source that discusses this.
   - the Noam Yerushalmi and the Tzafnat Pa'neach on 3:8 try to explain it.
 
   I did not go into it.
+
+## 2. "ולא הוצרך הר"מ לפרש": why didn't the Rambam need to say it? (2026-11-23)
+
+**The Minchas Chinuch** (350), in full:
+> ועתו"ס ערכין ד"ד ע"ב ד"ה וכמה וכו' כתבו דדוקא באומר ערך סתם אבל באומר ערך זכר נותן ה' שקלים פחות שבערכין בזכר וז"פ ולא הוצרך הר"מ לפרש
+
+**Answer.** He gives the reason just before: "וז"פ", that is, it is
+obvious. It follows from the rule the Rambam has already written.
+
+- **The rule is "the least his words can mean."** The Gemara's reason is
+  "תפשתה מועט — תפשתה" (4b:8). The Rambam's ruling is in Arachin 1:20: "אמר
+  הרי עלי ערך ולא פרש ערך מי אלא ערך סתם נותן פחות שבערכין שהוא שלשת
+  שקלים". Three is not a separate fixed sum. It is the least erech there is,
+  for a girl from a month to five years old ("דכתיב ולנקבה שלשת שקלים וזהו
+  פחות שבערכין", Rashi 4b:7).
+- **Apply the same rule to "ערך זכר".** His words now cover only male
+  erachin, and the least of those is five, for a boy from a month to five
+  years old. So the Rambam's rule already gives five. Tosafos' case is just
+  that rule applied, not a new din. The Rambam's own wording marks where three
+  applies: "ולא פרש ערך מי", when he specified nothing at all.
+- **The Rambam often leaves out the obvious.** The Maaseh Rokeach explains
+  another omission the same way. Tosafos on 2a says a slave is valued at a
+  male's erech, and the Rambam, Arachin 1:7, doesn't mention it: "ורבינו לא
+  הזכירו נראה מפני שפשוט הוא".
+
+**Why Tosafos said it at all.** Tosafos did not raise "ערך זכר" as a din of
+its own. It is his way of reconciling the Tosefta, which gives five for "ערך
+סתם", with our baraisa, which gives three. ("בסתם ערך דזכר (ונקבה) הוא": in
+the Vilna printing "ונקבה" is in parentheses, marked for deletion. Only
+without it does five make sense.)
+
+**If Tosafos' reconciliation is set aside, the Rambam still needs to say
+nothing.** The Tosefta's text says "ערך סתם", not "ערך זכר":
+- Sefaria's text (Machon Mamre), Arakhin 2:7: "הרי עלי ערך סתם זה מביא את
+  המועט שבערכין וכמה הוא מועט שבערכין ה' סלעים".
+- Mishnat Eretz Yisrael (on Menachot 13:9) quotes the Zuckermandel edition
+  (perek 2, halachah 13, p. 545) the same way: "וכמה הוא מועט שבערכין חמש
+  סלעים". It takes this at face value, as a case of uncertainty resolved
+  leniently ("כאן ספק ערכין להקל"). It does not compare it with the Bavli.
+
+If the Tosefta really means a fully unspecified erech, it disagrees with the
+baraisa in the Bavli. The Rambam rules like the Bavli (1:20), so he has no
+reason to bring the Tosefta. Either way there is nothing for him to add: on
+Tosafos' reading it is obvious, and on the plain reading it is rejected.
+
+**Is it really obvious?** One step is not spelled out anywhere I found.
+- **Is "ערך זכר" an erech at all?** "ערך סתום" needed a verse ("בערכך") to
+  count as an erech. "ערך זכר" lies between "ערך סתום" and "ערך פלוני".
+  It seems to follow a fortiori: if a fully unspecified erech counts, a partly
+  specified one should too. No one I found says so.
+- **Hasagas yad does not reopen the question for the Rambam.** On the first
+  version, someone might ask whether "ערך זכר" is also "כמפרש". On both
+  Rashi's and Tosafos' reasons it seems so: the sum is known, and no person is
+  named. But the Rambam rules that an unspecified erech is judged by hasagas
+  yad anyway (3:10), so nothing new arises.
+
+**Not checked.**
+- Not on Sefaria: the Zuckermandel edition itself, manuscripts of the
+  Tosefta, and the Tosefta commentaries (Minchas Bikkurim, Chasdei David).
+- Whether any other acharon besides the Minchas Chinuch and the Pardes Yosef
+  (Vayikra 27:2) takes up Tosafos' "ערך זכר". The Pardes Yosef only cites it:
+  "ובתוס' ערכין (ד':) ד"ה וכמה, דאומר ערך זכר נותן ה'".
 
 ## Related
 
