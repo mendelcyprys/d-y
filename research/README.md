@@ -21,7 +21,7 @@ Listed in the order of the Shas.
 | Arakhin 3b | question (2) | "הכל מעלין לארץ ישראל — לאתויי עבדים": Rashi here (the slave compels, only when he is being sold) against Rashi in Kesubos (the master compels a Hebrew slave); Ri and the Rambam. Where Rashi's narrower case comes from (Penei Yehoshua, the Ran via later sources, Rashi's two editions in the Shitah Mekubetzes) | answered | [arakhin-3b-hakol-maalin-avadim.md](arakhin-3b-hakol-maalin-avadim.md) |
 | Arakhin 3b | question (1) | "כהנים ולוים מוכרין לעולם": Rashi on 3b (even in the Yovel year) against Rashi on 33b, Tosafos, the Rambam, the Kesef Mishneh, Yachin and the Meiri ("even close to Yovel", or "מוכרין" said only alongside the other phrases) | answered | [arakhin-3b-mochrin-leolam.md](arakhin-3b-mochrin-leolam.md) |
 | Arakhin 4a | question (2) | Ben Buchri and "הכל מעריכין — כהנים". The real difficulties: the Sha'ar HaMelech on Rava's premise "כל דליתיה בשקלים ליתיה בערכין" (people under twenty, and women and slaves); R' Amiel on why the digression shows a kohen is a donor, not a partner | partly answered | [arakhin-4a-ben-buchri.md](arakhin-4a-ben-buchri.md) |
-| Arakhin 4a | question (1) | Is the baraisa "בערכך — להביא ערך סתום" (4a:17–4b:3) from the Sifra? Yes: Bechukosai, Section 3:5–7, with small differences of wording | answered | [arakhin-4a-bearkecha-sifra.md](arakhin-4a-bearkecha-sifra.md) |
+| Arakhin 4a | question (2) | Is the baraisa "בערכך — להביא ערך סתום" (4a:17–4b:5, up to "אמר מר") from the Sifra? Yes: Bechukosai, Section 3:5–9, in the same order. Differences: the Sifra's "ס"א" matches the Bavli; "נדר בערכך"; "ופחות מבן חדש" | answered | [arakhin-4a-bearkecha-sifra.md](arakhin-4a-bearkecha-sifra.md) |
 
 Status is one of:
 - `open`
