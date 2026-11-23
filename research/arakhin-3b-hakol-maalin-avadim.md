@@ -3,7 +3,7 @@ kind: question
 daf: Arakhin 3b
 topic: "הכל מעלין לארץ ישראל — לאתויי עבדים": Rashi here against Rashi in Kesubos
 asked: 2026-11-22
-updated: 2026-11-22
+updated: 2026-11-23
 status: answered
 ---
 
@@ -70,6 +70,62 @@ value.
 
 **Not checked.** The Ran on Kesubos, cited by the Rashash. I also did not find
 anyone who discusses why Rashi writes "מהול".
+
+## 2. Ri and the Rambam read it simply. Where does Rashi get his more complicated case? (2026-11-23)
+
+**Answer.** Not from a hidden source. Two difficulties face the simple reading,
+where a slave compels his master as a wife compels her husband. Rashi's case is
+what is left once both are taken seriously.
+
+**The simple reading.** "הכל" are those who compel, and slaves are among them.
+Rambam (Avadim 8:9, quoted above). The Ramah, in Shitah Mekubetzes on Kesubos
+110b, quoting the students of Rabbeinu Yonah:
+> וכתב הרמ"ה דמסתברא לענין עבד עברי דכשם שהרב יכול לכוף את העבד לעלות אחריו כך העבד יכול לכוף את הרב להעלותו... וכשם שהאשה יכולה לכוף את בעלה כך העבד יכול לכוף את רבו להעלותו ואם לא רצה הרי העבד עולה לבדו.
+
+**Difficulty 1: "מעלין" does not fit a Canaanite slave.** The **Penei Yehoshua**
+on Kesubos 110b explains this to show why Rashi there chose a Hebrew slave. If
+the master compels, it is obvious, since a Canaanite slave is "קנין כספו הוא
+כשורו וחמורו". If the slave compels, it does not work either:
+> משא"כ בעבד כנעני לא שייך לשון מעלין דבשביל שעבד כנעני נפקע משיעבודו לא ישנה דירתו לילך לא"י ועוד שהרי יכול למכרו לאחר בא"י לכך הוכרח רש"י לפרש דעבדים היינו עבד עברי
+
+The words "יכול למכרו לאחר בא"י" describe exactly Rashi's case on our daf.
+*My inference*, which no one states: on our daf Rashi accepts that a Canaanite
+slave cannot make his master move. All that is left of "the slave brings up" is
+that a sale, if there is one, takes place in Eretz Yisrael.
+
+**Difficulty 2: the seifa would be superfluous.** The Ran, as quoted by the
+Penei Yehoshua:
+> וכתב הר"ן ז"ל דהראב"ד ז"ל מפרש עבדים דשמעתין בעבד כנעני אלא דרש"י לא רצה לפרש כן דא"כ תיקשי סיפא דאין מוציאין למה לי לענין עבד כנעני השתא דמעלין כ"ש דאין מוציאין
+
+The Rashash on Kesubos 110b adds that this *kal vachomer* applies only on the
+Ra'avad's reading, "דהכל מעלין היינו שכופה העבד את רבו להעלותו". Rashi's
+narrow reisha, where the master is selling anyway, leaves the seifa its own
+point. Even a master who never wanted to sell must sell a runaway slave in
+Eretz Yisrael ("זבניה הכא וזיל"). Tosafos on 3b reads Rashi this way: "דרוצה
+למוכרו שאינו מוציאו מרשותו". The Penei Yehoshua himself thinks the Ran's
+*kal vachomer* does not hold.
+
+**Rashi changed his reading more than once.** The Shitah Mekubetzes on Kesubos
+110b preserves two editions of Rashi there.
+- First edition: "אחד האנשים ואחד הנשים יכולין לכוף זה את זה", and "לאתויי
+  עבדים עבד עברי וכל שכן עבד כנעני שאם קנה עבד עברי בח"ל יכול לכופו לילך
+  אחריו".
+- Final edition: "הכל מעלין את כל בני ביתו", on which the Shitah comments:
+  > פי' דקדק לפרש דמלת הכל קאי אעולין ולא על המעלין מדאמרינן בגמרא הכל לאתויי עבדים
+
+So it was the Gemara's "לאתויי עבדים" that made Rashi re-read "הכל" itself.
+Our daf, with the slave as the one who compels but only in a sale, is a third
+approach.
+
+**How the others meet the difficulties.**
+- Tosafos on 3b: the seifa still teaches something even on the broad reading.
+  "א"נ דהואיל וברח ניקנסיה לעבד ולא נפטר, א"נ ס"ד דרישא כגון שהרב הולך
+  תדיר בארץ ישראל בלאו הכי".
+- The Ramah: if the master will not go, the slave goes alone.
+- The Rambam: the master must sell him to someone who will take him up.
+
+**Not checked.** The Ran himself. I know him only as quoted by the Penei
+Yehoshua, the Rashash, the Melechet Shlomo and the Kesef Mishneh.
 
 ## Related
 
