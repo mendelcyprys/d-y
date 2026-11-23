@@ -84,10 +84,19 @@ npm start
 Then open <http://localhost:8000>. Any static file server works; this one
 uses Python's built-in server.
 
-**On your phone, or anywhere:** the app is published with GitHub Pages
-from the `main` branch (**Settings → Pages → Deploy from a branch → `main`,
-`/ (root)`**), at <https://mendelcyprys.github.io/d-y/>. Anything merged
-into `main` goes live a minute or two later. On a phone, use "Add to Home
+**On your phone, or anywhere:** the app is online in two places, with the
+same files:
+
+- <https://daf-yomi.mmcyprys.workers.dev> on Cloudflare, served by a small
+  Worker (`site/`) that has the app's files packed into it. Update it with
+  `npm run deploy:site` (needs `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID`).
+- <https://mendelcyprys.github.io/d-y/> on GitHub Pages, from the `main`
+  branch (**Settings → Pages → Deploy from a branch → `main`, `/ (root)`**).
+  Anything merged into `main` goes live there a minute or two later.
+
+Each address keeps its own copy of your progress in the browser, so use your
+account to have the same progress on both. On a phone, use "Add to Home
 Screen" to open it like an app.
 
 ## How it works
@@ -103,6 +112,7 @@ Screen" to open it like an app.
 | `src/sync.js` | Your account, and automatic backup that sends only what changed, through the service in `worker/`. |
 | `src/config.js` | The backup service's address. |
 | `worker/` | The backup service: accounts and backups on a Cloudflare Worker with Durable Objects. See `worker/README.md`. |
+| `site/` | Serves the app itself from Cloudflare: `build.mjs` packs the files into a module for `worker.js`. |
 | `src/app.js` | The pages and everything you click. |
 
 The schedule has been checked against Sefaria's calendar at the first and
