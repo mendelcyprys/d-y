@@ -4,10 +4,11 @@
 // You create an account (username and password) and log in on each device.
 // Your record is backed up in pieces: one per daf you've touched ("Arakhin 5":
 // when you learned it, your note, your passage reads) plus your starting
-// point. A few seconds after a change, only the pieces that changed are sent;
-// when the app opens, comes back into view or comes back online, it asks only
-// for the pieces changed since it last looked. So each backup stays small
-// however much you've learned.
+// point. Only the pieces that changed are sent: a few seconds after you stop,
+// but at most once every 20 seconds (and straight away when you leave the
+// app), usually in a single request. When the app opens, comes back into view
+// or comes back online, it asks only for the pieces changed since it last
+// looked. So each backup stays small however much you've learned.
 //
 // Each saved piece has a revision number. A device saving a piece says which
 // revision it last saw; if another device has changed that piece since, the
@@ -23,7 +24,8 @@ import { SYNC_URL } from './config.js';
 
 const ACCOUNT_KEY = 'daf-yomi:account';
 const URL_OVERRIDE_KEY = 'daf-yomi:sync-url'; // for testing against a local service
-const SAVE_DELAY = 3000;
+const SAVE_DELAY = 3000; // after a change, wait for a pause this long...
+const MAX_WAIT = 20000; // ...but never longer than this; and send at most this often
 const RECHECK_EVERY = 5 * 60 * 1000;
 const BATCH_BYTES = 500_000;
 const BATCH_ITEMS = 1000;
@@ -116,6 +118,15 @@ export function dirtyKeys(items, hashes) {
   return [...keys].filter((key) => itemHash(items[key]) !== (hashes[key] ?? itemHash(null)));
 }
 
+/**
+ * When to send changes: after a short pause in your changes, but no more
+ * often than every MAX_WAIT, and never more than MAX_WAIT after the oldest
+ * change still waiting. (Times in milliseconds.)
+ */
+export function nextSendAt({ now, lastSent = 0, firstUnsent = now }) {
+  return Math.max(lastSent + MAX_WAIT, Math.min(now + SAVE_DELAY, firstUnsent + MAX_WAIT));
+}
+
 // ---------------------------------------------------------------------------
 // The sync engine
 
@@ -166,7 +177,6 @@ export function createSync({
     account = {};
   }
   let busy = false;
-  let again = false;
   let timer = 0;
   let current = { state: account.token ? 'pending' : 'off' };
 
@@ -234,9 +244,11 @@ export function createSync({
     const record = getState();
     const mine = toItems(record);
     const next = structuredClone(record);
+    let combined = 0;
     for (const { key, rev, value } of pieces) {
       const here = mine[key] ?? null;
       const unchangedHere = itemHash(here) === (account.hashes[key] ?? itemHash(null));
+      if (!unchangedHere && itemHash(here) !== itemHash(value)) combined++;
       applyItem(next, key, unchangedHere ? value : mergeItem(key, here, value));
       account.revs[key] = rev;
       account.hashes[key] = itemHash(value);
@@ -244,15 +256,18 @@ export function createSync({
     const clean = normalizeState(next);
     clean.settings = record.settings;
     applyRemote(clean);
+    return combined;
   }
 
+  /** Fetch what other devices saved. Returns how many pieces had to be combined. */
   async function pull() {
+    let combined = 0;
     for (;;) {
       const res = await call('GET', `/v1/changes?since=${account.cursor || 0}`);
-      if (res.items.length) takeIn(res.items);
+      if (res.items.length) combined += takeIn(res.items);
       account.cursor = res.rev;
       save();
-      if (!res.more) return;
+      if (!res.more) return combined;
     }
   }
 
@@ -279,53 +294,81 @@ export function createSync({
     return out;
   }
 
+  /** Record a successful save. Returns true if another device had saved since we last looked. */
   function saved(batch, res) {
     const sent = new Map(batch.map((p) => [p.key, p.value]));
     for (const { key, rev } of res.written) {
       account.revs[key] = rev;
       account.hashes[key] = itemHash(sent.get(key));
     }
-    // If nobody else saved in between, there's no need to fetch these back.
-    if (res.revBefore === account.cursor) account.cursor = res.rev;
+    // If nobody else saved in between, there's nothing to fetch.
+    if (res.revBefore === account.cursor) {
+      account.cursor = res.rev;
+      return false;
+    }
+    return true;
   }
 
-  /** Send the changed pieces. Returns how many came back changed by another device. */
+  /**
+   * Send the changed pieces. Returns { combined, behind }: how many pieces
+   * another device had also changed (now combined, to send again), and
+   * whether other devices have saved anything we haven't fetched.
+   */
   async function push() {
-    let conflicts = 0;
+    let combined = 0;
+    let behind = false;
     for (const batch of batches(unsavedPieces())) {
       const res = await call('POST', '/v1/changes', { items: batch });
-      saved(batch, res);
-      if (res.conflicts.length) {
-        takeIn(res.conflicts);
-        conflicts += res.conflicts.length;
-      }
+      if (saved(batch, res)) behind = true;
+      if (res.conflicts.length) combined += takeIn(res.conflicts);
       save();
     }
-    return conflicts;
+    return { combined, behind };
   }
 
   let running = Promise.resolve();
+  let queued = false;
+  let lastSent = 0; // when the last send began
+  let firstUnsent = null; // when the oldest change not yet sent was made
 
-  /** Back up now (and take in other devices' changes). Resolves when done. */
+  /**
+   * Back up now, and take in other devices' changes. Resolves when done. If a
+   * backup is already under way, one more runs straight after it.
+   */
   function syncNow() {
     if (!account.token || !available()) return Promise.resolve();
     if (busy) {
-      again = true;
+      if (!queued) {
+        queued = true;
+        running = running.then(() => {
+          queued = false;
+          return syncOnce();
+        });
+      }
       return running;
     }
     running = syncOnce();
     return running;
   }
 
+  // Send our changes first: the reply says whether anyone else has saved,
+  // and only then do we fetch. So a usual backup is a single request.
   async function syncOnce() {
     busy = true;
     clearTimeout(timer);
     report('syncing');
+    const sending = unsavedPieces().length > 0;
+    if (sending) lastSent = now();
+    firstUnsent = null;
     let ok = false;
     try {
-      await pull();
-      for (let round = 0; (await push()) > 0; round++) {
+      let result = sending ? await push() : { combined: 0, behind: true };
+      for (let round = 0; ; round++) {
+        let combined = result.combined;
+        if (result.behind) combined += await pull();
+        if (!combined) break; // nothing was changed both here and elsewhere
         if (round === 4) throw new ServiceError('Other devices kept saving at the same moment.');
+        result = await push(); // send the combined pieces
       }
       account.lastSynced = new Date(now()).toISOString();
       save();
@@ -337,22 +380,31 @@ export function createSync({
     } finally {
       busy = false;
     }
-    if (again || (ok && unsavedPieces().length)) {
-      again = false;
-      schedule(ok ? SAVE_DELAY : 0);
+    // Changes made while this was running go out on the usual schedule.
+    if (ok && !queued && unsavedPieces().length) {
+      firstUnsent ??= now();
+      scheduleSend();
     }
   }
 
-  function schedule(delay = SAVE_DELAY) {
+  function schedule(delay) {
     clearTimeout(timer);
-    timer = setTimeout(syncNow, delay);
+    // If a backup is under way when the time comes, it'll reschedule itself.
+    timer = setTimeout(() => {
+      if (!busy) syncNow();
+    }, delay);
   }
 
-  /** Call after every local save. */
+  function scheduleSend() {
+    schedule(Math.max(0, nextSendAt({ now: now(), lastSent, firstUnsent: firstUnsent ?? now() }) - now()));
+  }
+
+  /** Call after every change to the record. */
   function changed() {
     if (!account.token) return;
+    firstUnsent ??= now();
     if (current.state !== 'syncing') report('pending');
-    schedule();
+    scheduleSend();
   }
 
   // Leaving the page: send anything unsaved straight away, if it's small
