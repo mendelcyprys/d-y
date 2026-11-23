@@ -11,6 +11,7 @@ import { loadDaf, loadRashi, hasRashi, splitDibbur, COMMENTATORS, sefariaUrl } f
 import { textToFragment } from './sanitize.js';
 import { loadState, saveState, storageAvailable } from './store.js';
 import { readingPosition, passageAt } from './reading.js';
+import { createSync, parseSyncKey, syncLink, syncPayload } from './sync.js';
 
 let state = loadState();
 const main = document.getElementById('main');
@@ -89,6 +90,61 @@ function dafHref(index) {
 function persist() {
   saveState(state);
   updateStorageWarning();
+  sync.changed(state);
+}
+
+// ---------------------------------------------------------------------------
+// Automatic backup (see src/sync.js and worker/)
+
+const sync = createSync({
+  getState: () => state,
+  applyRemote,
+  onStatus: showSyncStatus,
+});
+let syncStatus = sync.status();
+
+/** Take a record synced from the backup, keeping this device's settings. */
+function applyRemote(incoming) {
+  const next = P.normalizeState(incoming);
+  next.settings = state.settings;
+  if (JSON.stringify(syncPayload(next)) === JSON.stringify(syncPayload(state))) return;
+  state = next;
+  saveState(state);
+  // Don't pull the page out from under you while you're typing or reading.
+  const typing = document.activeElement?.matches('input, textarea');
+  const reading = ['learn', 'daf'].includes(parseRoute().view) && window.scrollY > 300;
+  if (typing || reading) {
+    toast('Updated with changes from your other device.', 8000, { label: 'Show', onClick: render });
+  } else {
+    render();
+  }
+}
+
+function minutesAgo(iso) {
+  const minutes = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${plural(minutes, 'minute', 'minutes')} ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${plural(hours, 'hour', 'hours')} ago`;
+  return dates.full.format(new Date(iso));
+}
+
+function syncStatusText(status) {
+  if (!status.enabled) return null;
+  switch (status.state) {
+    case 'syncing': return 'Backing up…';
+    case 'pending': return 'Will back up in a moment.';
+    case 'offline': return "Offline: will back up when you're back online.";
+    case 'error': return `Couldn't reach your backup (${status.message}). Will try again.`;
+    default: return status.lastSynced ? `Backed up ${minutesAgo(status.lastSynced)}.` : 'Backed up.';
+  }
+}
+
+function showSyncStatus(status) {
+  syncStatus = status;
+  const footer = document.getElementById('sync-footer');
+  footer.textContent = syncStatusText(status) || 'Your progress and notes stay in this browser.';
+  for (const el of document.querySelectorAll('[data-sync-status]')) el.textContent = syncStatusText(status) || '';
 }
 
 let toastTimer;
@@ -159,6 +215,7 @@ function parseRoute() {
     return { view: 'learn' };
   }
   if (view === 'progress' || view === 'notes' || view === 'schedule') return { view };
+  if (view === 'sync' && parseSyncKey(rest[0])) return { view: 'sync', key: parseSyncKey(rest[0]) };
   return { view: 'learn' };
 }
 
@@ -176,7 +233,8 @@ function render() {
   }
 
   let page;
-  if (route.view === 'progress') page = progressPage();
+  if (route.view === 'sync') page = linkDevicePage(route.key);
+  else if (route.view === 'progress') page = progressPage();
   else if (route.view === 'notes') page = notesPage();
   else if (route.view === 'schedule') page = schedulePage();
   else if (route.view === 'daf') page = dafPage(route.index, { home: false });
@@ -1431,7 +1489,9 @@ function dataCard() {
 
   return h('section', { class: 'card data-card' },
     h('h2', {}, 'Your data'),
-    h('p', {}, "Your progress and notes are saved in this browser only. Export a backup now and then, and import it to carry on in another browser. Importing adds to what's here; it never deletes anything."),
+    syncSection(),
+    h('h3', {}, 'Backup file'),
+    h('p', {}, "You can also save a backup file, and import it in another browser. Importing adds to what's there; it never deletes anything."),
     h('div', { class: 'actions' },
       h('button', { type: 'button', class: 'btn', onclick: exportBackup }, 'Export backup'),
       h('button', { type: 'button', class: 'btn', onclick: () => fileInput.click() }, 'Import backup'),
@@ -1454,13 +1514,134 @@ function dataCard() {
         type: 'button',
         class: 'link-button danger',
         onclick: () => {
-          if (!confirm('Delete all your progress and notes from this browser? This cannot be undone.')) return;
+          const synced = sync.status().enabled;
+          if (!confirm(synced
+            ? 'Delete all your progress and notes from this browser? Your automatic backup is kept, and this device stops backing up to it (you can link it again later).'
+            : 'Delete all your progress and notes from this browser? This cannot be undone.')) return;
+          if (synced) sync.disable();
           state = P.emptyState();
           persist();
           render();
-          toast('Everything has been cleared.');
+          toast('Everything has been cleared from this browser.');
         },
       }, 'Delete everything'),
+    ),
+  );
+}
+
+// Automatic backup: turn it on, see how it's going, link other devices.
+function syncSection() {
+  if (!sync.available()) {
+    return h('p', {}, 'Your progress and notes are saved in this browser only.');
+  }
+  const status = sync.status();
+  const statusLine = h('p', { class: 'sync-status', 'data-sync-status': '' }, syncStatusText(syncStatus) || '');
+
+  if (!status.enabled) {
+    const input = h('input', { type: 'text', placeholder: 'Paste the link or code', 'aria-label': 'Link or code from your other device', autocomplete: 'off', spellcheck: false });
+    return h('div', { class: 'sync-section' },
+      h('h3', {}, 'Automatic backup'),
+      h('p', {}, 'Back up your progress, reads and notes automatically, and keep your phone and computer in step. Your backup is kept in your own free Cloudflare account.'),
+      h('div', { class: 'actions' },
+        h('button', {
+          type: 'button',
+          class: 'btn btn-primary',
+          onclick: () => {
+            sync.enable();
+            render();
+            toast('Automatic backup is on.');
+          },
+        }, 'Turn on automatic backup'),
+      ),
+      h('details', { class: 'sync-link-existing' },
+        h('summary', {}, 'Already backing up on another device?'),
+        h('p', { class: 'small' }, 'On that device, open Progress and copy the link under Automatic backup. Open the link here, or paste it below.'),
+        h('form', {
+          class: 'goto-form',
+          onsubmit: (event) => {
+            event.preventDefault();
+            const key = parseSyncKey(input.value);
+            if (!key) {
+              toast("That doesn't look like a backup link or code.");
+              return;
+            }
+            location.hash = `#/sync/${key}`;
+          },
+        }, input, h('button', { type: 'submit', class: 'btn' }, 'Link this device')),
+      ),
+    );
+  }
+
+  const link = syncLink(status.key);
+  const linkField = h('input', { type: 'text', readOnly: true, value: link, 'aria-label': 'Link for your other devices', onfocus: (e) => e.target.select() });
+  return h('div', { class: 'sync-section' },
+    h('h3', {}, 'Automatic backup is on'),
+    statusLine,
+    h('p', { class: 'small' }, 'To use your progress on another phone or computer, open this link on it. Keep it private: anyone with it can see and change your progress.'),
+    h('div', { class: 'goto-form' },
+      linkField,
+      h('button', {
+        type: 'button',
+        class: 'btn',
+        onclick: async () => {
+          try {
+            await navigator.clipboard.writeText(link);
+            toast('Link copied.');
+          } catch {
+            linkField.select();
+            toast('Select the link and copy it.');
+          }
+        },
+      }, 'Copy link'),
+    ),
+    h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'btn', onclick: () => sync.syncNow() }, 'Back up now'),
+      h('button', {
+        type: 'button',
+        class: 'link-button',
+        onclick: () => {
+          if (!confirm('Stop backing up from this device? Your backup and everything on this device are kept.')) return;
+          sync.disable();
+          render();
+        },
+      }, 'Turn off on this device'),
+    ),
+  );
+}
+
+// Opened from a link made on another device: link this one to the same backup.
+function linkDevicePage(key) {
+  document.title = 'Link this device · Daf Yomi';
+  const status = sync.status();
+  const leave = () => location.replace('#/progress');
+  if (!sync.available()) {
+    return h('div', { class: 'page' }, h('h1', {}, 'Link this device'), h('p', { class: 'card' }, 'Automatic backup is not set up for this copy of the app.'));
+  }
+  if (status.key === key) {
+    return h('div', { class: 'page' },
+      h('h1', {}, 'Link this device'),
+      h('section', { class: 'card' }, h('p', {}, 'This device is already linked to that backup.'),
+        h('button', { type: 'button', class: 'btn', onclick: leave }, 'Go to Progress')));
+  }
+  const hasRecord = Object.keys(state.learned).length || Object.keys(state.notes).length || Object.keys(state.reads).length;
+  return h('div', { class: 'page' },
+    h('h1', {}, 'Link this device'),
+    h('section', { class: 'card' },
+      h('p', {}, 'Link this device to your automatic backup? Your progress, reads and notes will be kept in step with your other devices.'),
+      hasRecord ? h('p', {}, "What's already on this device will be combined with the backup; nothing is lost.") : null,
+      status.enabled ? h('p', { class: 'small' }, 'This device is linked to a different backup now; it will switch to this one.') : null,
+      h('div', { class: 'actions' },
+        h('button', {
+          type: 'button',
+          class: 'btn btn-primary',
+          onclick: () => {
+            sync.enable(key);
+            toast('This device is linked to your backup.');
+            leave();
+          },
+        }, 'Link this device'),
+        h('button', { type: 'button', class: 'btn', onclick: leave }, 'Cancel'),
+      ),
     ),
   );
 }
@@ -1573,3 +1754,4 @@ function schedulePage() {
 
 updateStorageWarning();
 render();
+sync.start();

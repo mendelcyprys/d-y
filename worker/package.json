@@ -1,0 +1,14 @@
+{
+  "name": "daf-yomi-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backup and sync service for the Daf Yomi app (Cloudflare Worker).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}

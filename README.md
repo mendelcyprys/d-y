@@ -49,8 +49,13 @@ behind.
 - **Schedule.** The next two weeks, and the start and siyum date of every
   tractate in the cycle.
 
-Your progress and notes are saved in your browser on your device. Use
-**Progress → Export backup** to keep a copy or move to another device.
+**Automatic backup.** Turn it on under **Progress → Your data** and the app
+backs up your progress, reads and notes a few seconds after each change, to
+your own free Cloudflare account (the service is in `worker/`). To use the
+same progress on your phone and computer, open the private link it gives you
+on the other device; changes made on either one then show up on the other.
+Display settings (layout, text width, Rashi) stay with each device. You can
+also export a backup file and import it elsewhere.
 
 ## Using it
 
@@ -81,6 +86,9 @@ Screen" to open it like an app.
 | `src/reading.js` | Where you are in a daf from where its passages are on screen: the reading bar's ticks and fill, and which passage a tap on it means. |
 | `src/sanitize.js` | Rebuilds Sefaria's formatting (bold, footnotes, links) from an allowlist, so the text can't run anything on the page. |
 | `src/store.js` | Saves to `localStorage`. |
+| `src/sync.js` | Automatic backup and keeping devices in step, through the service in `worker/`. |
+| `src/config.js` | The backup service's address. |
+| `worker/` | The backup service: a Cloudflare Worker with a Durable Object per backup. See `worker/README.md`. |
 | `src/app.js` | The pages and everything you click. |
 
 The schedule has been checked against Sefaria's calendar at the first and
