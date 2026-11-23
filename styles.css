@@ -732,6 +732,52 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 
 /* Rashi */
 .text-body[data-rashi="off"] .rashi { display: none; }
+.rashi-toggle { display: none; }
+
+/* Buttons view: the text keeps its width; under each passage with Rashi, a
+   small button showing how many comments there are opens them below. */
+.text-body[data-rashi="tap"] .seg-content .rashi {
+  grid-column: 1 / -1;
+  order: 3;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.text-body[data-rashi="tap"] .rashi-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .15rem .6rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font: 600 .8rem/1.5 var(--font-ui);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.text-body[data-rashi="tap"] .rashi-toggle [lang="he"] { font-family: var(--font-he); font-size: 1.05rem; font-weight: 700; }
+.text-body[data-rashi="tap"] .rashi-toggle .rashi-count {
+  min-width: 1.35rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  text-align: center;
+}
+.text-body[data-rashi="tap"] .rashi-toggle:hover { border-color: var(--accent); }
+.text-body[data-rashi="tap"] .rashi.is-open .rashi-toggle { background: var(--accent-soft); }
+.text-body[data-rashi="tap"] .rashi:not(.is-open) .rashi-body { display: none; }
+.text-body[data-rashi="tap"] .rashi.is-open .rashi-body {
+  margin-top: .4rem;
+  padding: .5rem .75rem;
+  border-right: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.text-body[data-rashi="tap"] .rashi-body .rashi-label { display: none; }
+
+.segmented-label { display: grid; place-items: center; padding: 0 .6rem; border-right: 1px solid var(--line); color: var(--muted); font-size: .8rem; font-weight: 700; }
 .rashi:empty { display: none; }
 .rashi {
   align-self: start;

@@ -19,9 +19,11 @@ behind.
   plain text is explanation. The text comes from [Sefaria](https://www.sefaria.org).
 - **Rashi beside the Gemara.** Each passage has Rashi's comments on it next to
   it (or under it on a phone), with the opening words in bold. In Bava Batra
-  the Rashbam takes over, as in a printed Gemara. Switch it off with the
-  Rashi button, or press **Rashi script** to read it in the traditional
-  Rashi letters.
+  the Rashbam takes over, as in a printed Gemara. Choose **Off**, **Shown**
+  or **Buttons**: in Buttons, each passage with Rashi has a small button
+  showing how many comments there are, and tapping it opens them under the
+  passage. Press **Rashi script** to read it in the traditional Rashi
+  letters.
 - **Context across the page break.** A sugya often starts on one daf and
   ends on the next. Above the text you see the end of the previous daf, and
   below it the start of the next, shaded and read-only, with "Show more" to

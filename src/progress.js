@@ -11,6 +11,7 @@
 //     reads: { 'Arakhin 2': { '2a:3': ['2026-11-22', '2026-11-25'] } },  // passage -> each read
 //     bookmarks: { 'Arakhin 2': [{ passage: '2a:7', label: '', created, updated }] },  // passage null = the daf
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
+//                 rashiView: 'shown' | 'buttons',
 //                 textWidth: null | pixels }
 //   }
 //
@@ -36,7 +37,7 @@ export function emptyState() {
     notes: {},
     reads: {},
     bookmarks: {},
-    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null },
+    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null },
   };
 }
 
@@ -418,6 +419,7 @@ export function normalizeState(raw) {
   if (scale >= 0.7 && scale <= 2) state.settings.fontScale = scale;
   if (typeof settings.rashi === 'boolean') state.settings.rashi = settings.rashi;
   if (typeof settings.rashiScript === 'boolean') state.settings.rashiScript = settings.rashiScript;
+  if (settings.rashiView === 'shown' || settings.rashiView === 'buttons') state.settings.rashiView = settings.rashiView;
   const width = Number(settings.textWidth);
   if (settings.textWidth != null && width >= MIN_TEXT_WIDTH && width <= 6000) state.settings.textWidth = Math.round(width);
 

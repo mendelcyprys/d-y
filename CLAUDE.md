@@ -17,7 +17,9 @@ the change is tested (tests pass and it's been checked in a browser), without as
 - Sefaria's calendar only lists Daf Yomi for cycle 14, so calendar lookups use the matching cycle-14 date.
 - Sefaria rate-limits (HTTP 429); avoid bursts of requests.
 - Rashi ("Rashi on Arakhin 5") is split into the same passages as the Gemara: comment list n on 5a belongs to passage n of
-  5a. Bava Batra adds "Rashbam on Bava Batra"; Shekalim, Kinnim, Tamid and Middot have no Rashi.
+  5a. Bava Batra adds "Rashbam on Bava Batra"; Shekalim, Kinnim, Tamid and Middot have no Rashi. `.text-body`
+  `data-rashi` is `off`, `on` (beside each passage) or `tap` (a count button per passage that opens it); each slot
+  always holds both the button and the comments, and CSS picks what shows.
 - Anything added or resized above the passage being read (Rashi, context, the summary, the head card, layout changes)
   must go through `keepReadingPlace()` in `src/app.js`, so the reader's place on screen doesn't move.
 - Context from the neighbouring dafim (`.context-row`) sits outside `.amud-section`: no read marks, and the reading
