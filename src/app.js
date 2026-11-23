@@ -242,7 +242,7 @@ function drawMarksPanel() {
     goTo(index, passage);
   };
 
-  const recent = loadRecent();
+  const recent = state.recent || [];
   parts.push(h('h3', {}, 'Recent'));
   parts.push(recent.length
     ? h('ul', { class: 'marks-list' }, recent.map((r) => h('li', {},
@@ -250,7 +250,7 @@ function drawMarksPanel() {
         h('span', {}, dafName(r.index)),
         h('span', { class: 'small' }, [r.passage ? placeName(r.passage) : 'start', minutesAgo(new Date(r.at).toISOString())].join(' · '))),
     )))
-    : h('p', { class: 'small' }, 'Dafim you open will appear here, ready to pick up where you left off.'));
+    : h('p', { class: 'small' }, 'Dafim you spend time on will appear here, on all your devices, ready to pick up where you left off.'));
 
   const bookmarks = P.allBookmarks(state);
   parts.push(h('h3', {}, 'Bookmarks'));
@@ -622,6 +622,7 @@ let renderedDay = null;
 function render() {
   const route = parseRoute();
   renderedDay = S.isoDate(today());
+  if (route.view !== 'daf' && route.view !== 'learn') endVisit();
   stopTracking?.();
   stopTracking = null;
   for (const link of document.querySelectorAll('[data-nav]')) {
@@ -668,28 +669,58 @@ document.addEventListener('keydown', (event) => {
 // The daf page (also the Learn page, which shows your daf)
 
 // ---------------------------------------------------------------------------
-// Where you are: the daf and passage on screen, recently opened dafim (kept
-// on this device only), and jumping straight to a passage.
+// Where you are: the daf and passage on screen, recent dafim, and jumping
+// straight to a passage.
 
-const RECENT_KEY = 'daf-yomi:recent';
 let readingNow = null; // { index, passage } of the daf on screen
 let pendingJump = null; // { index, passage } to scroll to once the text loads
 let refreshMarks = () => {}; // redraws the read and bookmark marks on the daf on screen
 
-function loadRecent() {
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_KEY)) || [];
-  } catch {
-    return [];
-  }
+// Recent dafim. A daf counts as a recent visit once you've been on it for 20
+// seconds (a quick look on the way somewhere else doesn't). It's saved then,
+// and again when you move to another page or leave the app if you've read on
+// since, so the backup gets at most a couple of small saves per daf.
+const RECENT_STAY = 20000;
+let visit = null; // { index, passage, start, timer, saved }
+
+function saveVisit() {
+  if (!visit || Date.now() - visit.start < RECENT_STAY - 100) return;
+  if (visit.saved !== undefined && visit.saved === visit.passage) return; // nothing new since last time
+  state.recent = P.addRecent(state.recent, { index: visit.index, passage: visit.passage, at: Date.now() });
+  visit.saved = visit.passage;
+  persist();
 }
 
-function noteRecent(index, passage = null) {
-  try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(P.addRecent(loadRecent(), { index, passage, at: Date.now() })));
-  } catch {
-    // Recent dafim are a convenience; without storage there just aren't any.
+function beginVisit(index, passage = null) {
+  if (visit?.index === index) return; // the same daf drawn again: carry on
+  endVisit();
+  visit = { index, passage, start: Date.now() };
+  visit.timer = setTimeout(saveVisit, RECENT_STAY);
+}
+
+function endVisit() {
+  if (!visit) return;
+  clearTimeout(visit.timer);
+  saveVisit();
+  visit = null;
+}
+
+// Leaving the app: save the visit now (before the backup sends what's waiting).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveVisit();
+});
+window.addEventListener('pagehide', saveVisit);
+
+// Recent dafim used to be kept on each device only; bring them into the record.
+try {
+  const old = JSON.parse(localStorage.getItem('daf-yomi:recent'));
+  if (Array.isArray(old) && old.length) {
+    state.recent = P.mergeRecent(state.recent, P.normalizeState({ recent: old }).recent);
+    saveState(state);
   }
+  localStorage.removeItem('daf-yomi:recent');
+} catch {
+  // Nothing to bring over.
 }
 
 /** Where on screen the passage you're reading starts: a quarter of the way down, below the top bar. */
@@ -698,12 +729,45 @@ function readingLineY() {
   return barBottom + (window.innerHeight - barBottom) / 4;
 }
 
+// After jumping to a passage, hold it at the reading line while the rest of
+// the page (Rashi, the end of the previous daf, fonts) loads in around it:
+// whenever the page changes size, put it back. This stops as soon as you
+// scroll or tap, or after a few seconds.
+let pinnedRow = null;
+let pinTimer = 0;
+const pinWatcher = new ResizeObserver(() => {
+  if (!pinnedRow?.isConnected) return;
+  const shift = pinnedRow.getBoundingClientRect().top - (readingLineY() - 1);
+  if (Math.abs(shift) > 1) window.scrollBy(0, shift);
+});
+function pin(row) {
+  pinnedRow = row;
+  pinWatcher.disconnect();
+  pinWatcher.observe(document.body);
+  clearTimeout(pinTimer);
+  pinTimer = setTimeout(unpin, 8000);
+}
+function unpin() {
+  pinnedRow = null;
+  pinWatcher.disconnect();
+  clearTimeout(pinTimer);
+}
+window.addEventListener('wheel', unpin, { passive: true });
+window.addEventListener('touchstart', unpin, { passive: true });
+window.addEventListener('pointerdown', (event) => {
+  if (!event.target.closest?.('#reading-bar')) unpin(); // (the reading bar pins as it moves you)
+});
+window.addEventListener('keydown', (event) => {
+  if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key) && !event.target.closest?.('#reading-bar')) unpin();
+});
+
 /** Scroll a passage to the reading line, and flash it so you can see where you've landed. */
 function scrollToPassage(passage, { flash = true } = {}) {
   const mark = document.querySelector(`.amud-section .seg-mark[data-passage="${CSS.escape(passage)}"]`);
   const row = mark?.closest('.seg-row');
   if (!row) return false;
   window.scrollTo({ top: window.scrollY + row.getBoundingClientRect().top - (readingLineY() - 1), behavior: 'auto' });
+  pin(row);
   if (flash) {
     row.classList.remove('is-target');
     void row.offsetWidth; // restart the animation
@@ -729,7 +793,7 @@ function dafPage(index, { home }) {
   const { tractate } = S.dafAtIndex(index);
   document.title = `${dafName(index)} · Daf Yomi`;
   readingNow = { index, passage: null };
-  noteRecent(index, pendingJump?.index === index ? pendingJump.passage : null);
+  beginVisit(index, pendingJump?.index === index ? pendingJump.passage : null);
 
   const page = h('div', { class: 'daf-layout' });
   const column = h('div', { class: 'daf-main' });
@@ -782,7 +846,7 @@ function dafPage(index, { home }) {
       const now = started ? passage : null;
       if (readingNow?.index === index && readingNow.passage !== now) {
         readingNow = { index, passage: now };
-        if (now) noteRecent(index, now);
+        if (now && visit?.index === index) visit.passage = now;
       }
     },
   });
@@ -829,13 +893,16 @@ const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? '
 function keepReadingPlace(change) {
   const barBottom = topbar.getBoundingClientRect().bottom;
   const rows = [...document.querySelectorAll('.amud-section .seg-row')];
-  if (!rows.length || rows[0].getBoundingClientRect().top >= barBottom) {
+  const pinned = pinnedRow?.isConnected ? pinnedRow : null;
+  if (!pinned && (!rows.length || rows[0].getBoundingClientRect().top >= barBottom)) {
     change(); // not reading yet: let the text simply move down
     return;
   }
-  // The first passage that starts on screen (anything added inside a passage
-  // only grows it downwards), or failing that the one filling the screen.
-  const anchor = rows.find((row) => row.getBoundingClientRect().top >= barBottom)
+  // The passage you just jumped to; otherwise the first passage that starts
+  // on screen (anything added inside a passage only grows it downwards), or
+  // failing that the one filling the screen.
+  const anchor = pinned
+    || rows.find((row) => row.getBoundingClientRect().top >= barBottom)
     || rows.findLast((row) => row.getBoundingClientRect().top < barBottom);
   const before = anchor.getBoundingClientRect().top;
   change();

@@ -158,6 +158,7 @@ test('requests are checked', async () => {
   const { body: { token } } = await signup(s);
   const bad = async (items) => (await s.call('POST', '/v1/changes', { items }, token)).status;
   assert.equal(await bad([{ key: 'DROP TABLE', value: null, baseRev: 0 }]), 400);
+  assert.equal(await bad([{ key: 'recent', value: { visits: [] }, baseRev: 0 }]), 200);
   assert.equal(await bad([{ key: 'Arakhin 2', value: [1], baseRev: 0 }]), 400);
   assert.equal(await bad([{ key: 'Arakhin 2', value: null, baseRev: -1 }]), 400);
   assert.equal(await bad('nope'), 400);

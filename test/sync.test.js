@@ -26,7 +26,7 @@ function sample() {
 
 test('a record splits into one piece per daf, plus the starting point', () => {
   const items = toItems(sample());
-  assert.deepEqual(Object.keys(syncPayload(sample())).sort(), ['bookmarks', 'learned', 'notes', 'passageNotes', 'reads', 'start', 'version']);
+  assert.deepEqual(Object.keys(syncPayload(sample())).sort(), ['bookmarks', 'learned', 'notes', 'passageNotes', 'reads', 'recent', 'start', 'version']);
   assert.deepEqual(Object.keys(items).sort(), ['Arakhin 2', 'Arakhin 3', 'start']);
   assert.deepEqual(items['Arakhin 2'], {
     learned: { 14: '2026-11-22' },
@@ -321,4 +321,25 @@ test('notes on passages sync between devices, and clearing one carries over', as
   await laptop.change((r) => P.setPassageNote(r, arakhin, 2, '2a:3', ''));
   await phone.sync.syncNow();
   assert.equal(P.getPassageNote(phone.record, arakhin, 2, '2a:3'), '');
+});
+
+test('recent dafim follow you between devices, combined', async () => {
+  const server = testServer();
+  const phone = device(server, sample());
+  await phone.sync.signup('mendel', 'correct horse');
+  const laptop = device(server);
+  await laptop.sync.login('mendel', 'correct horse');
+  await phone.change((r) => { r.recent = P.addRecent(r.recent, { index: at(5), passage: '5a:9', at: 1000 }); });
+  await laptop.sync.syncNow();
+  assert.deepEqual(laptop.record.recent, [{ index: at(5), passage: '5a:9', at: 1000 }]);
+  // Both read something else before syncing: both visits are kept.
+  laptop.offline = true;
+  await laptop.change((r) => { r.recent = P.addRecent(r.recent, { index: at(7), passage: '7b:2', at: 3000 }); });
+  await phone.change((r) => { r.recent = P.addRecent(r.recent, { index: at(6), passage: '6a:1', at: 2000 }); });
+  laptop.offline = false;
+  await laptop.sync.syncNow();
+  await phone.sync.syncNow();
+  for (const dev of [phone, laptop]) {
+    assert.deepEqual(dev.record.recent.map((r) => r.passage), ['7b:2', '6a:1', '5a:9']);
+  }
 });

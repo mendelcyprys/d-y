@@ -132,6 +132,7 @@ test('saved state is cleaned up when loaded', () => {
   assert.equal(P.normalizeState({ settings: { rashiView: 'sideways' } }).settings.rashiView, 'shown');
   assert.deepEqual(state.bookmarks, {});
   assert.deepEqual(state.passageNotes, {});
+  assert.deepEqual(state.recent, []);
   assert.equal(P.normalizeState({ settings: { textWidth: 1100.4 } }).settings.textWidth, 1100);
   assert.equal(P.normalizeState({ settings: { textWidth: 50 } }).settings.textWidth, null);
   assert.equal(P.normalizeState({ settings: { textWidth: 'wide' } }).settings.textWidth, null);
@@ -284,4 +285,23 @@ test('passage notes are cleaned up when loaded and combined on import', () => {
   const merged = P.mergeStates(loaded, other);
   assert.equal(P.getPassageNote(merged, arakhin, 5, '5a:7'), 'newer');
   assert.equal(P.getPassageNote(merged, arakhin, 6, '6a:1'), 'only there');
+});
+
+test('recent dafim from two devices combine: the latest visit to each, newest first', () => {
+  const phone = [{ index: 5, passage: '2a:7', at: 300 }, { index: 4, passage: null, at: 100 }];
+  const laptop = [{ index: 5, passage: '2a:3', at: 200 }, { index: 9, passage: '9b:1', at: 250 }];
+  assert.deepEqual(P.mergeRecent(phone, laptop), [
+    { index: 5, passage: '2a:7', at: 300 },
+    { index: 9, passage: '9b:1', at: 250 },
+    { index: 4, passage: null, at: 100 },
+  ]);
+  const many = Array.from({ length: 15 }, (_, i) => ({ index: i, passage: null, at: i }));
+  assert.equal(P.mergeRecent(many, []).length, P.RECENT_MAX);
+});
+
+test('recent dafim are cleaned up when loaded, and kept on import', () => {
+  const loaded = P.normalizeState({ recent: [{ index: 3, passage: '3a:1', at: 10 }, { index: -1, at: 5 }, { index: 2, at: 'x' }, 'junk', { index: 3, passage: null, at: 4 }] });
+  assert.deepEqual(loaded.recent, [{ index: 3, passage: '3a:1', at: 10 }]);
+  const merged = P.mergeStates(loaded, { recent: [{ index: 7, passage: null, at: 20 }] });
+  assert.deepEqual(merged.recent.map((r) => r.index), [7, 3]);
 });

@@ -44,11 +44,12 @@ behind.
   to mark the daf as learned.
 - **Bookmarks and recent dafim, one tap away.** The ribbon button in the top
   bar opens Recent (the dafim you opened lately, each remembering the
-  passage you'd reached: tap one to go straight back there) and your
-  Bookmarks. "Bookmark this place" bookmarks the passage you're on, or tap
+  passage you'd reached: tap one to go straight back there; a daf counts once
+  you've spent 20 seconds on it) and your Bookmarks. "Bookmark this place" bookmarks the passage you're on, or tap
   the ribbon beside any passage; add a label if you like. Bookmarked
-  passages are marked on the reading bar, and bookmarks back up with your
-  account. Recent stays on each device.
+  passages are marked on the reading bar. Bookmarks and Recent back up with
+  your account, so you can stop on your phone and pick up on your computer
+  at the same passage.
 - **Copy a passage.** Right-click a passage (or long-press on Android) to
   copy it: Hebrew and English, either one, with its Rashi, or a link straight
   to it. Pasted into a document it keeps its bold and Hebrew direction. With

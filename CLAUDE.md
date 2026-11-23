@@ -42,7 +42,12 @@ The backup service's `ALLOWED_ORIGINS` (`worker/wrangler.toml`) must list every 
 - Notes on single passages live in `passageNotes: { "Arakhin 5": { "5a:7": { text, updated } } }` (beside the daf's
   own note in `notes`), and sync in the daf's piece; `allNotes()` lists both in page order.
 - Bookmarks live in the record (`bookmarks: { "Arakhin 5": [{ passage, label, created, updated }] }`, passage null =
-  the daf) and sync inside the daf's piece. Recent dafim are device-only, in `localStorage['daf-yomi:recent']`.
-  A link can name a passage: `#/daf/arakhin/5/5a:7` (jumps there once the text loads).
+  the daf) and sync inside the daf's piece. Recent dafim are in the record too (`recent: [{ index, passage, at }]`,
+  synced as the `recent` piece, merged by latest visit per daf). A visit counts after 20 s on a daf and is saved then
+  and on leaving the page (or the app) if you've read on; see `beginVisit()`/`saveVisit()` in `src/app.js`.
+  A link can name a passage: `#/daf/arakhin/5/5a:7` (jumps there once the text loads, and `pin()` holds it at the
+  reading line while the rest of the page loads, until the reader scrolls or taps).
+- A new kind of piece needs the backup service to accept its key (`ITEM_KEY` in `worker/src/handler.js`): deploy the
+  service before merging the app change.
 - Save record changes with `persist()` (it tells the backup); save display-setting changes with `persistSettings()`, so
   the backup icon doesn't show unsaved changes that aren't backed up anyway.
