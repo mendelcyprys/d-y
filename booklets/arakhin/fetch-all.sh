@@ -1,5 +1,5 @@
 #!/bin/bash
-# Downloads everything the booklet needs from Sefaria into raw/ (about 150 requests, a few minutes).
+# Downloads everything the booklet needs from Sefaria into raw/ (about 100 requests, a few minutes).
 # Safe to re-run: files that are already there are kept.
 set -e
 cd "$(dirname "$0")"
