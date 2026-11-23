@@ -27,6 +27,11 @@ Question 2: why the Rambam doesn't mention Tosafos' "ערך זכר" (five
 sela'im). The Minchas Chinuch says it is obvious ("וז"פ"): it is the Rambam's
 own rule, "the least erech his words cover", applied to males.
 
+Question 3: Mishnat Eretz Yisrael's "ספק ערכין להקל" on the Tosefta's five
+sela'im. They cite the Bavli often, but this passage doesn't use Arakhin 4b,
+Rashi or Tosafos. Its result matches the Bavli; its framing (a doubt) does
+not.
+
 ## The texts
 
 **Gemara, Arakhin 4b:6–11** (William Davidson):
@@ -211,6 +216,79 @@ Tosafos' reading it is obvious, and on the plain reading it is rejected.
 - Whether any other acharon besides the Minchas Chinuch and the Pardes Yosef
   (Vayikra 27:2) takes up Tosafos' "ערך זכר". The Pardes Yosef only cites it:
   "ובתוס' ערכין (ד':) ד"ה וכמה, דאומר ערך זכר נותן ה'".
+
+## 3. "ספק ערכין להקל": did Mishnat Eretz Yisrael know the sugya here and Rashi? (2026-11-23)
+
+**The passage.** Mishnat Eretz Yisrael on Menachot 13 (Ze'ev, Chana and
+Shmuel Safrai), in its essay on how vows of uncertain meaning are read (at
+13:9 on Sefaria):
+> לגבי ערכין שנינו: "הרי עלי ערך סתם זה מביא את המועט שבערכין, וכמה הוא מועט שבערכין חמש סלעים" (תוס', ערכין פ"ב הי"ג, עמ' 545), וכן בהמשך התוספתא. כאן ספק ערכין להקל. אבל בהמשך זו מחלוקת חכמים... רבי מאיר הוא המקל, וחכמים מחמירים.
+
+**Answer.** They know the Bavli and use it all the time, but this passage was
+not written with Arakhin 4b in view. The text cannot show what they knew,
+only what they used. Here they used only the Tosefta.
+
+**They cite the Bavli, but hardly ever the commentators.** Counting
+mentions in their commentary on Arakhin 1–3 and Menachot 13 (as on Sefaria):
+- "בבלי": 17 to 86 times a chapter.
+- Rashi: twice in all, both times for the meaning of a word (on ליסטרון, and
+  Rashi on Bekhoros 44b).
+- The Rambam: twice, both in Arakhin 1.
+- Arakhin 4b: never.
+- "תפסת מרובה לא תפסת": never, in any of these chapters.
+
+This fits what the commentary sets out to do: read the Mishnah against the
+sources of Eretz Yisrael (the Tosefta, the Yerushalmi, the halachic
+midrashim), with the Bavli in second place. Sefaria's description: "with an
+emphasis on the Land of Israel as the backdrop of the Mishnah's development".
+
+**Signs that 4b was not in view here:**
+1. **"Five" goes unremarked.** They give "חמש סלעים" as "המועט שבערכין" with
+   no comment. But the least erech in the Torah is three shekels, for a girl
+   from a month to five years old. Our baraisa says three, and that is the
+   whole reason Tosafos needs "בסתם ערך דזכר" (question 2). Anyone with the
+   Bavli or Tosafos in mind would have had to say something.
+2. **"Five" doesn't fit their own rule.** If "doubt goes lenient" were the
+   reason, the answer would be three, not five. Five only makes sense if "ערך"
+   on its own means a male's erech (Tosafos), or if the text is corrupt. They
+   don't take up either.
+3. **The Bavli's own rule for this is missing.** Their essay is looking for a
+   rule "שאמור היה להציע פתרון כולל לכל השאלות שבפרק". The Bavli has one for
+   exactly this case: "תפשתה מרובה — לא תפשתה, תפשתה מועט — תפשתה" (4b:8).
+   They contrast erech stam with "סתם נדרים להחמיר" and never mention it.
+4. **The same verse appears on 4b without comment from them.** In their
+   commentary on Arakhin 2:1 (comment 6) they bring R' Meir's derasha from the
+   Tosefta: "הרי זה נותן סלע... שנאמר וכל ערכך יהיה בשקל הקדש". They do not
+   note that the Bavli uses the same verse on 4b:9 ("ההוא בהשג יד הוא
+   דכתיב"), which Rashi explains as the floor for a poor man: "לא יעריכנו
+   כהן בפחות משקל".
+   - They also suggest that for the Chachamim a poor man's erech might be
+     "גבוה יותר, ואולי גם פחות מזה". The Bavli's reading of that verse rules
+     out "פחות". Their own comment 4 on that mishnah says "(אף לא פחות
+     מסלע)".
+5. **They skip the derasha in the Sifra.** In their commentary on Arakhin 1:3
+   (comment 9) they quote the Sifra passage (Bechukosai 3:5–6) that opens
+   "בערכך – להביא ערך הסתום". But their quotation starts after it:
+   "בערכך... או יכול שאני מוציא דבר שהנשמה תלויה בו".
+
+**Is "ספק ערכין להקל" wrong in substance?** No. In result it matches the
+Bavli, which also takes the minimum. Only the framing differs:
+- **Mishnat Eretz Yisrael:** a doubt about the vow, resolved leniently. That
+  is how they contrast it with "סתם נדרים להחמיר".
+- **The Bavli and Rashi:** not a doubt at all, but what the words certainly
+  include. Rashi on 4b:8: "אינו חולק על דבריך אלא מוסיף דבכלל מרובה איכא
+  מועט". The vow is binding without doubt, and what it certainly covers is
+  the least erech.
+
+On the Bavli's framing, the contrast with "סתם נדרים להחמיר" falls away.
+That rule asks whether a vow takes effect. This one asks only how much it
+covers.
+
+**Not checked.**
+- Their commentary on Nedarim 2, which they cite for "סתם" and "ספק נזירות".
+- Their other volumes, where they might take up "תפסת מרובה" or Arakhin 4b.
+- Their introduction to Arakhin, which they refer to ("כפי שהראינו במבוא").
+- The Zuckermandel edition itself.
 
 ## Related
 
