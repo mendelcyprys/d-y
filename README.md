@@ -27,7 +27,7 @@ behind.
   below it the start of the next, shaded and read-only, with "Show more" to
   read further. (Not across tractates.)
 - **Know where you are in a long daf.** A bar along the top has a tick for
-  every passage (green once you've read it) and the amudim marked. It fills
+  every passage (with a green dot once you've marked it read) and the amudim marked. It fills
   as you read, with the passage number you're on at its end. Tap anywhere
   on it to jump to that passage, or drag along it to move through the daf.
   A label shows the amud, passage and percentage (e.g. "2a · 7/17 · 38%");
