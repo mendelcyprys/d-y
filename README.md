@@ -49,6 +49,10 @@ behind.
   the ribbon beside any passage; add a label if you like. Bookmarked
   passages are marked on the reading bar, and bookmarks back up with your
   account. Recent stays on each device.
+- **Copy a passage.** Right-click a passage (or long-press on Android) to
+  copy it: Hebrew and English, either one, with its Rashi, or a link straight
+  to it. Pasted into a document it keeps its bold and Hebrew direction. With
+  text selected, the browser's own menu shows instead.
 - **Notes on every daf, and on any passage.** Write general notes on the
   daf beside the text, or tap the note button beside a passage to write a
   note right under it. They save as you type. The Notes page collects them

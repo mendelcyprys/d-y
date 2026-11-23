@@ -292,6 +292,129 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+// ---- Copying a passage: the menu that right-click opens on a passage.
+
+/** A passage's text as plain text, paragraph by paragraph, without footnotes. */
+function passageText(el, selector = 'p') {
+  if (!el) return '';
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.fn-marker, .footnote, .rashi-toggle, .rashi-label').forEach((n) => n.remove());
+  return [...clone.querySelectorAll(selector)].map((p) => p.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
+}
+
+/** The same as HTML (keeping bold and italics), for pasting into documents. */
+function passageHtml(el, selector = 'p', attrs = '') {
+  if (!el) return '';
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.fn-marker, .footnote, .rashi-toggle, .rashi-label').forEach((n) => n.remove());
+  return [...clone.querySelectorAll(selector)].map((p) => `<p${attrs}>${p.innerHTML}</p>`).join('');
+}
+
+async function copyToClipboard(text, html) {
+  try {
+    if (html && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+        'text/html': new Blob([html], { type: 'text/html' }),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    return true;
+  } catch {
+    // Older browsers: copy from a hidden text box.
+    const area = h('textarea', { value: text, style: { position: 'fixed', top: '-1000px', opacity: '0' } });
+    document.body.append(area);
+    area.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    area.remove();
+    return ok;
+  }
+}
+
+let passageMenu = null;
+
+function closePassageMenu() {
+  if (!passageMenu) return;
+  passageMenu.remove();
+  passageMenu = null;
+}
+
+function openPassageMenu(row, index, event) {
+  closePassageMenu();
+  const passage = row.querySelector('.seg-mark')?.dataset.passage;
+  const where = `${dafName(index)}${passage ? ` · ${placeName(passage)}` : ''}`;
+  const he = row.querySelector('.seg-content > .he');
+  const en = row.querySelector('.seg-content > .en');
+  const rashi = row.querySelector('.rashi .rashi-body');
+  const heText = passageText(he);
+  const enText = passageText(en);
+  const rashiText = passageText(rashi, '.rashi-comment');
+  const heHtml = passageHtml(he, 'p', ' dir="rtl" lang="he"');
+  const enHtml = passageHtml(en);
+  const rashiHtml = passageHtml(rashi, '.rashi-comment', ' dir="rtl" lang="he"');
+  const title = `<p><strong>${where}</strong></p>`;
+
+  const copy = (label, parts, htmlParts) => async () => {
+    closePassageMenu();
+    const text = [where, ...parts.filter(Boolean)].join('\n\n');
+    const html = title + htmlParts.filter(Boolean).join('');
+    toast(await copyToClipboard(text, html) ? `Copied ${label}.` : "Couldn't copy. Select the text and copy it instead.");
+  };
+  const link = `${location.origin}${location.pathname}${dafHref(index, passage)}`;
+
+  const items = [
+    ['Copy passage', 'Hebrew and English', copy(where, [heText, enText], [heHtml, enHtml])],
+    heText ? ['Copy Hebrew', null, copy(`the Hebrew of ${where}`, [heText], [heHtml])] : null,
+    enText ? ['Copy English', null, copy(`the English of ${where}`, [enText], [enHtml])] : null,
+    rashiText ? ['Copy with Rashi', null, copy(`${where} with Rashi`, [heText, enText, `רש״י\n${rashiText}`], [heHtml, enHtml, '<p dir="rtl" lang="he"><strong>רש״י</strong></p>', rashiHtml])] : null,
+    ['Copy link to this passage', null, async () => {
+      closePassageMenu();
+      toast(await copyToClipboard(link) ? 'Link copied.' : "Couldn't copy the link.");
+    }],
+  ].filter(Boolean);
+
+  passageMenu = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `Copy ${where}` },
+    h('p', { class: 'ctx-title' }, where),
+    items.map(([label, sub, action]) => h('button', { type: 'button', role: 'menuitem', class: 'ctx-item', onclick: action },
+      h('span', {}, label), sub ? h('span', { class: 'small' }, sub) : null)),
+  );
+  document.body.append(passageMenu);
+
+  // Place it at the pointer, kept inside the window.
+  const { innerWidth: w, innerHeight: hgt } = window;
+  const box = passageMenu.getBoundingClientRect();
+  const x = event.clientX || row.getBoundingClientRect().left + 40;
+  const y = event.clientY || row.getBoundingClientRect().top + 20;
+  passageMenu.style.left = `${Math.max(8, Math.min(x, w - box.width - 8))}px`;
+  passageMenu.style.top = `${Math.max(8, Math.min(y, hgt - box.height - 8))}px`;
+  passageMenu.querySelector('.ctx-item').focus({ preventScroll: true });
+}
+
+document.addEventListener('pointerdown', (event) => {
+  if (passageMenu && !event.composedPath().includes(passageMenu)) closePassageMenu();
+});
+document.addEventListener('keydown', (event) => {
+  if (!passageMenu) return;
+  const items = [...passageMenu.querySelectorAll('.ctx-item')];
+  const at = items.indexOf(document.activeElement);
+  if (event.key === 'Escape') closePassageMenu();
+  else if (event.key === 'ArrowDown') items[(at + 1) % items.length].focus();
+  else if (event.key === 'ArrowUp') items[(at - 1 + items.length) % items.length].focus();
+  else return;
+  event.preventDefault();
+});
+// Close when you scroll (not when the page adjusts itself as text loads).
+window.addEventListener('wheel', closePassageMenu, { passive: true });
+window.addEventListener('touchmove', closePassageMenu, { passive: true });
+window.addEventListener('resize', closePassageMenu);
+window.addEventListener('hashchange', closePassageMenu);
+
 // ---- The backup icon in the top bar, and the panel it opens.
 
 const syncIndicator = document.getElementById('sync-indicator');
@@ -1475,6 +1598,16 @@ function textCard(index, { onReadThrough } = {}) {
     if (amud) {
       changeReads(() => P.finishReading(state, tractate, daf, passagesIn(amud.closest('.amud-section')), today()));
     }
+  });
+
+  // Right-click (or long-press) on a passage: a menu to copy it. With text
+  // selected, the browser's own menu shows instead, to copy just that.
+  body.addEventListener('contextmenu', (event) => {
+    const row = event.target.closest('.amud-section .seg-row');
+    if (!row || event.target.closest('textarea, input')) return;
+    if (String(getSelection()).trim()) return;
+    event.preventDefault();
+    openPassageMenu(row, index, event);
   });
 
   // Footnote markers open and close their note.
