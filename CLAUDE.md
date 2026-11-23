@@ -22,3 +22,8 @@ the change is tested (tests pass and it's been checked in a browser), without as
   must go through `keepReadingPlace()` in `src/app.js`, so the reader's place on screen doesn't move.
 - Context from the neighbouring dafim (`.context-row`) sits outside `.amud-section`: no read marks, and the reading
   position only counts `.amud-section .seg-row`.
+- Automatic backup: `src/sync.js` talks to the Worker in `worker/` (deployed as `daf-yomi-sync` on the owner's
+  Cloudflare account; address in `src/config.js`). Only `syncPayload()` (start, learned, notes, reads) is synced;
+  settings stay per device. Saves name a `baseRev`; a 409 means another device saved first, so fetch, merge, retry.
+  The Worker's logic is in `worker/src/handler.js` and is tested in Node. Deploy with
+  `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`; don't commit the account ID.

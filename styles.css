@@ -793,3 +793,13 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   .toast { transition: none; }
 }
+
+/* ---- Automatic backup ---------------------------------------------------- */
+
+.data-card h3 { font-size: 1rem; margin: 1.25rem 0 .4rem; }
+.data-card h3:first-of-type { margin-top: .5rem; }
+.sync-section { padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.sync-status { font-weight: 600; color: var(--learned); }
+.sync-status:empty { display: none; }
+.sync-section .goto-form input[type="text"] { flex: 1 1 14rem; min-width: 0; font-size: .85rem; }
+.sync-link-existing summary { cursor: pointer; color: var(--accent); font-weight: 600; margin: .5rem 0; }

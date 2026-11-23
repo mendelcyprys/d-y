@@ -1,0 +1,18 @@
+# The Daf Yomi backup service. Deploy from this folder with `npm run deploy`
+# (see worker/README.md). The Cloudflare account is chosen at deploy time.
+name = "daf-yomi-sync"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[vars]
+# Websites allowed to use the service from a browser, comma-separated.
+ALLOWED_ORIGINS = "https://mendelcyprys.github.io,http://localhost:8000"
+
+[[durable_objects.bindings]]
+name = "SYNC_STORE"
+class_name = "SyncStore"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SyncStore"]
