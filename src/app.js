@@ -1196,7 +1196,7 @@ function textCard(index, { onReadThrough } = {}) {
   const body = h('div', {
     class: 'text-body',
     'data-layout': settings.layout,
-    'data-rashi': settings.rashi ? 'on' : 'off',
+    'data-rashi': rashiMode(settings),
     'data-rashi-script': settings.rashiScript ? 'on' : 'off',
     style: { '--scale': settings.fontScale },
   }, h('p', { class: 'loading' }, 'Loading the text from Sefaria…'));
@@ -1236,7 +1236,7 @@ function textCard(index, { onReadThrough } = {}) {
         for (const slot of body.querySelectorAll('.rashi[data-amud]')) {
           const passages = rashi.byAmud[slot.dataset.amud] || [];
           const comments = slot.dataset.seg === 'all' ? passages.flat() : passages[Number(slot.dataset.seg)] || [];
-          if (comments.length) slot.replaceChildren(...rashiView(comments));
+          if (comments.length) slot.replaceChildren(...rashiSlot(comments));
         }
       });
       rashiStatus = 'done';
@@ -1249,20 +1249,37 @@ function textCard(index, { onReadThrough } = {}) {
     }
   }
 
-  const rashiButton = h('button', {
+  // Rashi: off; shown beside (or under) each passage; or folded behind a
+  // button on each passage, which shows how many comments there are.
+  const rashiModes = [
+    ['off', 'Off', 'No Rashi'],
+    ['on', 'Shown', 'Show Rashi beside each passage'],
+    ['tap', 'Buttons', 'A button on each passage with Rashi, showing how many comments; tap it to open them'],
+  ].map(([mode, label, title]) => h('button', {
     type: 'button',
-    'aria-pressed': settings.rashi ? 'true' : 'false',
-    title: 'Show Rashi beside the Gemara',
+    title,
+    'data-mode': mode,
+    'aria-pressed': String(rashiMode(settings) === mode),
     onclick: () => {
-      settings.rashi = !settings.rashi;
+      settings.rashi = mode !== 'off';
+      if (mode !== 'off') settings.rashiView = mode === 'tap' ? 'buttons' : 'shown';
       persistSettings();
-      keepReadingPlace(() => { body.dataset.rashi = settings.rashi ? 'on' : 'off'; });
-      rashiButton.setAttribute('aria-pressed', String(settings.rashi));
+      keepReadingPlace(() => { body.dataset.rashi = rashiMode(settings); });
+      for (const b of rashiModes) b.setAttribute('aria-pressed', String(b.dataset.mode === rashiMode(settings)));
       scriptButton.hidden = !settings.rashi;
       rashiNote.hidden = !settings.rashi || !rashiNote.childNodes.length;
       showRashi();
     },
-  }, 'Rashi');
+  }, label));
+
+  // Opening and closing Rashi on a passage, in the Buttons view.
+  body.addEventListener('click', (event) => {
+    const toggle = event.target.closest('.rashi-toggle');
+    if (!toggle) return;
+    const slot = toggle.closest('.rashi');
+    keepReadingPlace(() => slot.classList.toggle('is-open'));
+    toggle.setAttribute('aria-expanded', String(slot.classList.contains('is-open')));
+  });
 
   // Rashi script: the letters Rashi's commentary is printed in, with the
   // opening words in square letters, as on a page of the Vilna Shas.
@@ -1451,7 +1468,8 @@ function textCard(index, { onReadThrough } = {}) {
     h('div', { class: 'text-toolbar' },
       h('h2', { id: 'text-title' }, 'Text'),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Language' }, layoutButtons),
-      h('div', { class: 'segmented', role: 'group', 'aria-label': 'Rashi' }, rashiButton, scriptButton),
+      h('div', { class: 'segmented', role: 'group', 'aria-label': 'Rashi' }, h('span', { class: 'segmented-label' }, 'Rashi'), rashiModes),
+      h('div', { class: 'segmented' }, scriptButton),
       h('div', { class: 'segmented', role: 'group', 'aria-label': 'Text size' },
         h('button', { type: 'button', onclick: resize(-0.1), 'aria-label': 'Smaller text' }, 'A−'),
         h('button', { type: 'button', onclick: resize(0.1), 'aria-label': 'Larger text' }, 'A+'),
@@ -1584,6 +1602,30 @@ function sectionView(section) {
 
 // Rashi's comments on one passage, each starting with the words of the
 // Gemara it explains (the dibbur hamatchil) in bold.
+/** "off", "on" (shown beside each passage) or "tap" (behind a button on each passage). */
+function rashiMode(settings) {
+  if (!settings.rashi) return 'off';
+  return settings.rashiView === 'buttons' ? 'tap' : 'on';
+}
+
+/**
+ * What goes in a passage's Rashi slot: a button saying how many comments
+ * there are (used in the Buttons view) and the comments themselves.
+ */
+function rashiSlot(comments) {
+  const authors = [...new Set(comments.map((c) => COMMENTATORS[c.author]?.he || c.author))].join(' · ');
+  const count = comments.length;
+  return [
+    h('button', {
+      type: 'button',
+      class: 'rashi-toggle',
+      'aria-expanded': 'false',
+      'aria-label': `${[...new Set(comments.map((c) => c.author))].join(' and ')}: ${count} ${count === 1 ? 'comment' : 'comments'} on this passage`,
+    }, h('span', { lang: 'he', dir: 'rtl' }, authors), h('span', { class: 'rashi-count' }, String(count))),
+    h('div', { class: 'rashi-body' }, rashiView(comments)),
+  ];
+}
+
 function rashiView(comments) {
   const out = [];
   let author = null;
