@@ -6,7 +6,8 @@ Published by GitHub Pages from `main` (https://mendelcyprys.github.io/d-y/): wor
 into `main`; merging it puts the change live. The owner has asked for pull requests to be merged straight away once
 the change is tested (tests pass and it's been checked in a browser), without asking first.
 
-- Keep logic that doesn't need the DOM in `src/schedule.js` / `src/progress.js` and cover it with tests in `test/`.
+- Keep logic that doesn't need the DOM in `src/schedule.js` / `src/progress.js` / `src/reading.js` and cover it with
+  tests in `test/`.
 - Dafim are identified by an index (days since 24 June 1975, cycle 8 day 0). Learned dafim are stored per cycle as
   `"14/Arakhin/5": "YYYY-MM-DD"`; notes and passage reads are per daf across cycles as `"Arakhin 5"`. A passage is
   `"<amud>:<n>"` (1-based, Sefaria's segments), or `"<amud>:all"` when the two languages don't line up.

@@ -10,6 +10,7 @@ import * as P from './progress.js';
 import { loadDaf, loadRashi, hasRashi, splitDibbur, COMMENTATORS, sefariaUrl } from './sefaria.js';
 import { textToFragment } from './sanitize.js';
 import { loadState, saveState, storageAvailable } from './store.js';
+import { readingPosition, passageAt } from './reading.js';
 
 let state = loadState();
 const main = document.getElementById('main');
@@ -197,7 +198,7 @@ document.addEventListener('visibilitychange', () => {
 // Left and right arrow keys move between dafim on a daf page.
 document.addEventListener('keydown', (event) => {
   if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-  if (event.target.closest('input, textarea, select, [contenteditable], [role="separator"]')) return;
+  if (event.target.closest('input, textarea, select, [contenteditable], [role="separator"], [role="slider"]')) return;
   const link = document.querySelector(event.key === 'ArrowLeft' ? '[data-pager=prev]' : event.key === 'ArrowRight' ? '[data-pager=next]' : null);
   if (link) {
     event.preventDefault();
@@ -262,16 +263,23 @@ function dafPage(index, { home }) {
 }
 
 // ---------------------------------------------------------------------------
-// Where you are in a long daf. A line along the bottom of the top bar fills
-// as you scroll through the text, and a label beside the logo says which
-// amud and passage you're on. Tapping the label opens a menu to jump to the
-// top, to an amud, or to your notes.
+// Where you are in a long daf. A bar along the bottom of the top bar has a
+// tick for every passage (green once read) and the amudim marked; it fills as
+// you read, with the passage number you're on at its end. Tap or drag along
+// it to move through the daf. A label beside the logo says which amud and
+// passage you're on; tapping it opens a menu to jump to the top, to an amud,
+// or to your notes.
 
 const topbar = document.querySelector('.topbar');
 const readingNav = document.getElementById('reading-nav');
 const readingStatus = document.getElementById('reading-status');
 const readingMenu = document.getElementById('reading-menu');
-const readingLine = document.getElementById('reading-line');
+const readingBar = document.getElementById('reading-bar');
+const readingFill = readingBar.querySelector('.reading-fill');
+const readingTicks = readingBar.querySelector('.reading-ticks');
+const readingLabels = readingBar.querySelector('.reading-labels');
+const readingHead = readingBar.querySelector('.reading-head');
+const readingTip = readingBar.querySelector('.reading-tip');
 let stopTracking = null;
 
 // Keep the top bar's height in a CSS variable, so that jumping to a heading
@@ -313,43 +321,83 @@ function closeReadingMenu() {
   readingStatus.setAttribute('aria-expanded', 'false');
 }
 
+/** Name a passage row, e.g. "2a · 7" (or just "64a" when the amud is one). */
+function passageName(row) {
+  const { amud, number: n } = row.querySelector('.seg-mark').dataset;
+  return n === 'all' ? amud : `${amud} · ${n}`;
+}
+
 function trackReading(page) {
   let frame = 0;
+  let dragging = false;
+  let tickSignature = '';
+
+  // This daf's own passages (not the context shown from the dafim either
+  // side), and where they are right now.
+  function measure() {
+    const rows = [...page.querySelectorAll('.amud-section .seg-row')];
+    if (!rows.length) return null;
+    const barBottom = topbar.getBoundingClientRect().bottom;
+    const readAt = barBottom + (window.innerHeight - barBottom) / 4;
+    const tops = rows.map((row) => row.getBoundingClientRect().top);
+    const bottom = rows[rows.length - 1].getBoundingClientRect().bottom;
+    const atEnd = window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    return { rows, readAt, ...readingPosition(tops, bottom, readAt, atEnd) };
+  }
+
+  // One tick per passage, and a label where each amud starts. Rebuilt only
+  // when the passages change; moved when the layout changes.
+  function drawTicks({ rows, ticks }) {
+    const signature = rows.map((row) => row.querySelector('.seg-mark').dataset.passage).join();
+    if (signature !== tickSignature) {
+      tickSignature = signature;
+      readingTicks.replaceChildren(...rows.map((row) => {
+        const amudStart = row === row.closest('.amud-section').querySelector('.seg-row');
+        return h('span', { class: amudStart ? 'tick is-amud' : 'tick' });
+      }));
+      readingLabels.replaceChildren(...rows
+        .filter((row) => row === row.closest('.amud-section').querySelector('.seg-row'))
+        .map((row) => h('span', { 'data-row': String(rows.indexOf(row)) }, row.querySelector('.seg-mark').dataset.amud)));
+    }
+    rows.forEach((row, i) => {
+      const tick = readingTicks.children[i];
+      const left = `${(ticks[i] * 100).toFixed(2)}%`;
+      if (tick.style.left !== left) tick.style.left = left;
+      tick.classList.toggle('is-read', row.querySelector('.seg-mark').classList.contains('is-read'));
+    });
+    for (const label of readingLabels.children) label.style.left = `${(ticks[Number(label.dataset.row)] * 100).toFixed(2)}%`;
+  }
 
   function update() {
     frame = 0;
-    // This daf's own passages (not the context shown from the dafim either side).
-    const rows = [...page.querySelectorAll('.amud-section .seg-row')];
-    if (!rows.length) {
+    const m = measure();
+    if (!m) {
       readingNav.hidden = true;
-      readingLine.hidden = true;
+      readingBar.hidden = true;
       return;
     }
-    const barBottom = topbar.getBoundingClientRect().bottom;
-    const top = rows[0].getBoundingClientRect().top;
-    const height = rows[rows.length - 1].getBoundingClientRect().bottom - top;
+    const { rows, current, fill, started } = m;
+    const pct = Math.round(fill * 100);
+    readingBar.hidden = false;
+    drawTicks(m);
+    readingFill.style.width = `${fill * 100}%`;
 
-    // 0% when the text reaches the top bar, 100% when its end comes into view.
-    const range = height - (window.innerHeight - barBottom);
-    const pct = Math.round(Math.min(1, Math.max(0, range > 0 ? (barBottom - top) / range : 1)) * 100);
-    readingLine.hidden = false;
-    readingLine.firstElementChild.style.width = `${pct}%`;
+    const row = rows[current];
+    const { amud, number: n } = row.querySelector('.seg-mark').dataset;
+    const total = row.closest('.amud-section').querySelectorAll('.seg-row').length;
+    readingHead.hidden = !started;
+    readingHead.style.left = `${fill * 100}%`;
+    readingHead.textContent = n === 'all' ? amud : n;
+    readingBar.setAttribute('aria-valuemin', '1');
+    readingBar.setAttribute('aria-valuemax', String(rows.length));
+    readingBar.setAttribute('aria-valuenow', String(current + 1));
+    readingBar.setAttribute('aria-valuetext', n === 'all' ? amud : `${amud}, passage ${n} of ${total}`);
 
-    // The passage you're reading: the last one that has started above a line
-    // a third of the way down the screen.
-    const readAt = barBottom + (window.innerHeight - barBottom) / 3;
-    if (top > readAt) {
+    if (!started) {
       readingNav.hidden = true;
       closeReadingMenu();
       return;
     }
-    let current = rows[0];
-    for (const row of rows) {
-      if (row.getBoundingClientRect().top <= readAt) current = row;
-      else break;
-    }
-    const { amud, number: n } = current.querySelector('.seg-mark').dataset;
-    const total = current.closest('.amud-section').querySelectorAll('.seg-row').length;
     readingStatus.textContent = n === 'all' ? `${amud} · ${pct}%` : `${amud} · ${n}/${total} · ${pct}%`;
     readingStatus.setAttribute('aria-label', n === 'all'
       ? `You're on ${amud}, ${pct}% of the way through. Jump to…`
@@ -360,6 +408,74 @@ function trackReading(page) {
   const schedule = () => {
     if (!frame) frame = requestAnimationFrame(update);
   };
+
+  // ---- Moving through the daf with the bar.
+
+  // Put a passage's start just above the reading line, so it's the one
+  // you're on, with the end of the one before above it for context.
+  function goToPassage(i) {
+    const m = measure();
+    if (!m) return;
+    const index = Math.min(m.rows.length - 1, Math.max(0, i));
+    const top = m.rows[index].getBoundingClientRect().top;
+    window.scrollTo({ top: window.scrollY + top - (m.readAt - 1), behavior: 'auto' });
+    return m.rows[index];
+  }
+
+  function fractionAt(clientX) {
+    const r = readingBar.querySelector('.reading-track').getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+  }
+
+  function showTip(clientX, row) {
+    const r = readingBar.getBoundingClientRect();
+    readingTip.textContent = passageName(row);
+    readingTip.style.left = `${Math.min(r.width - 30, Math.max(30, clientX - r.left))}px`;
+    readingTip.hidden = false;
+  }
+
+  function scrubTo(clientX) {
+    const m = measure();
+    if (!m) return;
+    const row = goToPassage(passageAt(m.ticks, fractionAt(clientX)));
+    if (row) showTip(clientX, row);
+  }
+
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return;
+    readingBar.setPointerCapture(event.pointerId);
+    dragging = true;
+    readingBar.classList.add('is-dragging');
+    scrubTo(event.clientX);
+  };
+  const onPointerMove = (event) => {
+    if (dragging) {
+      scrubTo(event.clientX);
+    } else if (event.pointerType === 'mouse') {
+      const m = measure();
+      if (m) showTip(event.clientX, m.rows[passageAt(m.ticks, fractionAt(event.clientX))]);
+    }
+  };
+  const onPointerEnd = () => {
+    dragging = false;
+    readingBar.classList.remove('is-dragging');
+    readingTip.hidden = true;
+  };
+  const onPointerLeave = () => {
+    if (!dragging) readingTip.hidden = true;
+  };
+  const onBarKey = (event) => {
+    const m = measure();
+    if (!m) return;
+    const moves = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, PageDown: 5, PageUp: -5 };
+    if (event.key in moves) goToPassage(m.current + moves[event.key]);
+    else if (event.key === 'Home') goToPassage(0);
+    else if (event.key === 'End') goToPassage(m.rows.length - 1);
+    else return;
+    event.preventDefault();
+  };
+
+  // ---- The label's menu.
 
   function openMenu() {
     const jump = (target, focus) => () => {
@@ -396,9 +512,16 @@ function trackReading(page) {
   readingStatus.addEventListener('click', onStatusClick);
   document.addEventListener('click', onDocumentClick);
   document.addEventListener('keydown', onKey);
-  // The text arrives a moment after the page, and Rashi after that.
+  readingBar.addEventListener('pointerdown', onPointerDown);
+  readingBar.addEventListener('pointermove', onPointerMove);
+  readingBar.addEventListener('pointerup', onPointerEnd);
+  readingBar.addEventListener('pointercancel', onPointerEnd);
+  readingBar.addEventListener('pointerleave', onPointerLeave);
+  readingBar.addEventListener('keydown', onBarKey);
+  // The text arrives a moment after the page, then Rashi; read marks change
+  // as you go. Any of these can move the ticks.
   const observer = new MutationObserver(schedule);
-  observer.observe(page, { childList: true, subtree: true });
+  observer.observe(page, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-layout', 'data-rashi', 'data-rashi-script', 'style'] });
   schedule();
 
   return () => {
@@ -408,10 +531,18 @@ function trackReading(page) {
     readingStatus.removeEventListener('click', onStatusClick);
     document.removeEventListener('click', onDocumentClick);
     document.removeEventListener('keydown', onKey);
+    readingBar.removeEventListener('pointerdown', onPointerDown);
+    readingBar.removeEventListener('pointermove', onPointerMove);
+    readingBar.removeEventListener('pointerup', onPointerEnd);
+    readingBar.removeEventListener('pointercancel', onPointerEnd);
+    readingBar.removeEventListener('pointerleave', onPointerLeave);
+    readingBar.removeEventListener('keydown', onBarKey);
     observer.disconnect();
     closeReadingMenu();
     readingNav.hidden = true;
-    readingLine.hidden = true;
+    readingBar.hidden = true;
+    readingTip.hidden = true;
+    tickSignature = '';
   };
 }
 
