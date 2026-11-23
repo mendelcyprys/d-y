@@ -26,10 +26,12 @@ behind.
   ends on the next. Above the text you see the end of the previous daf, and
   below it the start of the next, shaded and read-only, with "Show more" to
   read further. (Not across tractates.)
-- **Know where you are in a long daf.** A line along the top bar fills as
-  you scroll, and a label shows the amud, passage and percentage (e.g.
-  "2a · 7/17 · 38%"). Tap it to jump to the top, to either amud, or to your
-  notes.
+- **Know where you are in a long daf.** A bar along the top has a tick for
+  every passage (green once you've read it) and the amudim marked. It fills
+  as you read, with the passage number you're on at its end. Tap anywhere
+  on it to jump to that passage, or drag along it to move through the daf.
+  A label shows the amud, passage and percentage (e.g. "2a · 7/17 · 38%");
+  tap it to jump to the top, to either amud, or to your notes.
 - **Make the text as wide as you like.** On a wide screen, drag the handle
   between the text and the side panel. Your width is remembered;
   double-click the handle to reset it.
@@ -76,6 +78,7 @@ Screen" to open it like an app.
 | `src/schedule.js` | The Daf Yomi calendar: which daf falls on which date, for any cycle since 1975. Each daf has an *index*, the number of days since cycle 8 began, which makes "where I am" easy to compare with "where the schedule is". |
 | `src/progress.js` | Your record: where you started, what you've learned and when, notes, streaks, review and catch-up plans. It has no browser code, so it can be tested in Node. |
 | `src/sefaria.js` | Loads a daf's text, and Rashi, from Sefaria's free API. Shekalim (from the Yerushalmi), Kinnim and Middot are looked up through Sefaria's Daf Yomi calendar. Sefaria splits Rashi into the same passages as the Gemara, which is how each comment is placed beside its passage. |
+| `src/reading.js` | Where you are in a daf from where its passages are on screen: the reading bar's ticks and fill, and which passage a tap on it means. |
 | `src/sanitize.js` | Rebuilds Sefaria's formatting (bold, footnotes, links) from an allowlist, so the text can't run anything on the page. |
 | `src/store.js` | Saves to `localStorage`. |
 | `src/app.js` | The pages and everything you click. |

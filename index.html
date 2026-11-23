@@ -33,7 +33,14 @@
       <a href="#/notes" data-nav="notes">Notes</a>
       <a href="#/schedule" data-nav="schedule">Schedule</a>
     </nav>
-    <div class="reading-line" id="reading-line" hidden aria-hidden="true"><span></span></div>
+    <div class="reading-bar" id="reading-bar" hidden role="slider" tabindex="0" aria-label="Position in the daf"
+         title="Tap or drag to move through the daf">
+      <div class="reading-labels"></div>
+      <div class="reading-track"><span class="reading-fill"></span></div>
+      <div class="reading-ticks"></div>
+      <span class="reading-head" hidden></span>
+      <span class="reading-tip" hidden></span>
+    </div>
   </header>
   <p id="storage-warning" class="banner" hidden>
     This browser isn't letting the app save, so your progress and notes will be lost when you close the page.
