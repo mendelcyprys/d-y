@@ -22,8 +22,11 @@ the change is tested (tests pass and it's been checked in a browser), without as
   must go through `keepReadingPlace()` in `src/app.js`, so the reader's place on screen doesn't move.
 - Context from the neighbouring dafim (`.context-row`) sits outside `.amud-section`: no read marks, and the reading
   position only counts `.amud-section .seg-row`.
-- Automatic backup: `src/sync.js` talks to the Worker in `worker/` (deployed as `daf-yomi-sync` on the owner's
-  Cloudflare account; address in `src/config.js`). Only `syncPayload()` (start, learned, notes, reads) is synced;
-  settings stay per device. Saves name a `baseRev`; a 409 means another device saved first, so fetch, merge, retry.
-  The Worker's logic is in `worker/src/handler.js` and is tested in Node. Deploy with
-  `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`; don't commit the account ID.
+- Accounts and backup: `src/sync.js` talks to the Worker in `worker/` (deployed as `daf-yomi-sync` on the owner's
+  Cloudflare account; address in `src/config.js`). Accounts are username + password (PBKDF2), with a recovery code.
+  The record is synced as pieces, one per daf (`"Arakhin 5": { learned: { 14: date }, note, reads }`) plus `start`;
+  only changed pieces are sent (`dirtyKeys`), and only pieces changed since the last revision are fetched. A save names
+  each piece's `baseRev`; a conflict comes back with the stored piece, which is merged and resent. Settings are not
+  synced. Server logic (`worker/src/{handler,accounts,store}.js`) is tested in Node on `node:sqlite` via
+  `test/server.js`. Deploy with `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy` in `worker/`;
+  don't commit the account ID. Add a new `[[migrations]]` entry for any Durable Object class change.

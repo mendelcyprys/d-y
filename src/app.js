@@ -11,7 +11,7 @@ import { loadDaf, loadRashi, hasRashi, splitDibbur, COMMENTATORS, sefariaUrl } f
 import { textToFragment } from './sanitize.js';
 import { loadState, saveState, storageAvailable } from './store.js';
 import { readingPosition, passageAt } from './reading.js';
-import { createSync, parseSyncKey, syncLink, syncPayload } from './sync.js';
+import { createSync, syncPayload } from './sync.js';
 
 let state = loadState();
 const main = document.getElementById('main');
@@ -130,6 +130,7 @@ function minutesAgo(iso) {
 }
 
 function syncStatusText(status) {
+  if (status.signedOut) return 'Logged out of your account on this device. Log in again to keep backing up.';
   if (!status.enabled) return null;
   switch (status.state) {
     case 'syncing': return 'Backing up…';
@@ -143,8 +144,11 @@ function syncStatusText(status) {
 function showSyncStatus(status) {
   syncStatus = status;
   const footer = document.getElementById('sync-footer');
-  footer.textContent = syncStatusText(status) || 'Your progress and notes stay in this browser.';
-  for (const el of document.querySelectorAll('[data-sync-status]')) el.textContent = syncStatusText(status) || '';
+  const text = syncStatusText(status);
+  if (text) footer.replaceChildren(text);
+  else if (sync.available()) footer.replaceChildren('Your progress and notes are only in this browser. ', h('a', { href: '#/progress' }, 'Create an account'), ' to back them up.');
+  else footer.replaceChildren('Your progress and notes stay in this browser.');
+  for (const el of document.querySelectorAll('[data-sync-status]')) el.textContent = text || '';
 }
 
 let toastTimer;
@@ -215,7 +219,6 @@ function parseRoute() {
     return { view: 'learn' };
   }
   if (view === 'progress' || view === 'notes' || view === 'schedule') return { view };
-  if (view === 'sync' && parseSyncKey(rest[0])) return { view: 'sync', key: parseSyncKey(rest[0]) };
   return { view: 'learn' };
 }
 
@@ -233,8 +236,7 @@ function render() {
   }
 
   let page;
-  if (route.view === 'sync') page = linkDevicePage(route.key);
-  else if (route.view === 'progress') page = progressPage();
+  if (route.view === 'progress') page = progressPage();
   else if (route.view === 'notes') page = notesPage();
   else if (route.view === 'schedule') page = schedulePage();
   else if (route.view === 'daf') page = dafPage(route.index, { home: false });
@@ -1489,7 +1491,7 @@ function dataCard() {
 
   return h('section', { class: 'card data-card' },
     h('h2', {}, 'Your data'),
-    syncSection(),
+    accountSection(),
     h('h3', {}, 'Backup file'),
     h('p', {}, "You can also save a backup file, and import it in another browser. Importing adds to what's there; it never deletes anything."),
     h('div', { class: 'actions' },
@@ -1513,15 +1515,13 @@ function dataCard() {
       h('button', {
         type: 'button',
         class: 'link-button danger',
-        onclick: () => {
-          const synced = sync.status().enabled;
-          if (!confirm(synced
-            ? 'Delete all your progress and notes from this browser? Your automatic backup is kept, and this device stops backing up to it (you can link it again later).'
+        onclick: async () => {
+          const signedIn = sync.status().enabled;
+          if (!confirm(signedIn
+            ? 'Delete all your progress and notes from this browser? You will be logged out here; your account and its backup are kept.'
             : 'Delete all your progress and notes from this browser? This cannot be undone.')) return;
-          if (synced) sync.disable();
-          state = P.emptyState();
-          persist();
-          render();
+          if (signedIn) await sync.logout({ force: true });
+          clearRecord();
           toast('Everything has been cleared from this browser.');
         },
       }, 'Delete everything'),
@@ -1529,121 +1529,184 @@ function dataCard() {
   );
 }
 
-// Automatic backup: turn it on, see how it's going, link other devices.
-function syncSection() {
-  if (!sync.available()) {
-    return h('p', {}, 'Your progress and notes are saved in this browser only.');
-  }
-  const status = sync.status();
-  const statusLine = h('p', { class: 'sync-status', 'data-sync-status': '' }, syncStatusText(syncStatus) || '');
-
-  if (!status.enabled) {
-    const input = h('input', { type: 'text', placeholder: 'Paste the link or code', 'aria-label': 'Link or code from your other device', autocomplete: 'off', spellcheck: false });
-    return h('div', { class: 'sync-section' },
-      h('h3', {}, 'Automatic backup'),
-      h('p', {}, 'Back up your progress, reads and notes automatically, and keep your phone and computer in step. Your backup is kept in your own free Cloudflare account.'),
-      h('div', { class: 'actions' },
-        h('button', {
-          type: 'button',
-          class: 'btn btn-primary',
-          onclick: () => {
-            sync.enable();
-            render();
-            toast('Automatic backup is on.');
-          },
-        }, 'Turn on automatic backup'),
-      ),
-      h('details', { class: 'sync-link-existing' },
-        h('summary', {}, 'Already backing up on another device?'),
-        h('p', { class: 'small' }, 'On that device, open Progress and copy the link under Automatic backup. Open the link here, or paste it below.'),
-        h('form', {
-          class: 'goto-form',
-          onsubmit: (event) => {
-            event.preventDefault();
-            const key = parseSyncKey(input.value);
-            if (!key) {
-              toast("That doesn't look like a backup link or code.");
-              return;
-            }
-            location.hash = `#/sync/${key}`;
-          },
-        }, input, h('button', { type: 'submit', class: 'btn' }, 'Link this device')),
-      ),
-    );
-  }
-
-  const link = syncLink(status.key);
-  const linkField = h('input', { type: 'text', readOnly: true, value: link, 'aria-label': 'Link for your other devices', onfocus: (e) => e.target.select() });
-  return h('div', { class: 'sync-section' },
-    h('h3', {}, 'Automatic backup is on'),
-    statusLine,
-    h('p', { class: 'small' }, 'To use your progress on another phone or computer, open this link on it. Keep it private: anyone with it can see and change your progress.'),
-    h('div', { class: 'goto-form' },
-      linkField,
-      h('button', {
-        type: 'button',
-        class: 'btn',
-        onclick: async () => {
-          try {
-            await navigator.clipboard.writeText(link);
-            toast('Link copied.');
-          } catch {
-            linkField.select();
-            toast('Select the link and copy it.');
-          }
-        },
-      }, 'Copy link'),
-    ),
-    h('div', { class: 'actions' },
-      h('button', { type: 'button', class: 'btn', onclick: () => sync.syncNow() }, 'Back up now'),
-      h('button', {
-        type: 'button',
-        class: 'link-button',
-        onclick: () => {
-          if (!confirm('Stop backing up from this device? Your backup and everything on this device are kept.')) return;
-          sync.disable();
-          render();
-        },
-      }, 'Turn off on this device'),
-    ),
-  );
+/** Empty this device's record (keeping its display settings). */
+function clearRecord() {
+  const settings = state.settings;
+  state = P.emptyState();
+  state.settings = settings;
+  saveState(state);
+  render();
 }
 
-// Opened from a link made on another device: link this one to the same backup.
-function linkDevicePage(key) {
-  document.title = 'Link this device · Daf Yomi';
+// ---- Account and backup: create an account, log in, see how the backup is
+// going, change password, log out, delete the account.
+
+/** A form that runs an async action, shows its error, and disables itself meanwhile. */
+function accountForm(fields, submitLabel, action, { note = null } = {}) {
+  const error = h('p', { class: 'form-error', role: 'alert' });
+  const submit = h('button', { type: 'submit', class: 'btn btn-primary' }, submitLabel);
+  const inputs = fields.map(({ name, label, type = 'text', autocomplete, value = '', minLength, hint }) => {
+    const input = h('input', { name, type, autocomplete, value, required: true, minLength, autocapitalize: 'none', spellcheck: false });
+    return { name, input, el: h('label', { class: 'field' }, h('span', {}, label), input, hint ? h('span', { class: 'small' }, hint) : null) };
+  });
+  const form = h('form', {
+    class: 'account-form',
+    onsubmit: async (event) => {
+      event.preventDefault();
+      error.textContent = '';
+      submit.disabled = true;
+      try {
+        await action(Object.fromEntries(inputs.map(({ name, input }) => [name, input.value])));
+      } catch (e) {
+        error.textContent = e.message;
+        submit.disabled = false;
+      }
+    },
+  }, inputs.map((i) => i.el), note, error, h('div', { class: 'actions' }, submit));
+  return form;
+}
+
+function accountSection() {
+  if (!sync.available()) return h('p', {}, 'Your progress and notes are saved in this browser only.');
   const status = sync.status();
-  const leave = () => location.replace('#/progress');
-  if (!sync.available()) {
-    return h('div', { class: 'page' }, h('h1', {}, 'Link this device'), h('p', { class: 'card' }, 'Automatic backup is not set up for this copy of the app.'));
-  }
-  if (status.key === key) {
-    return h('div', { class: 'page' },
-      h('h1', {}, 'Link this device'),
-      h('section', { class: 'card' }, h('p', {}, 'This device is already linked to that backup.'),
-        h('button', { type: 'button', class: 'btn', onclick: leave }, 'Go to Progress')));
-  }
-  const hasRecord = Object.keys(state.learned).length || Object.keys(state.notes).length || Object.keys(state.reads).length;
-  return h('div', { class: 'page' },
-    h('h1', {}, 'Link this device'),
-    h('section', { class: 'card' },
-      h('p', {}, 'Link this device to your automatic backup? Your progress, reads and notes will be kept in step with your other devices.'),
-      hasRecord ? h('p', {}, "What's already on this device will be combined with the backup; nothing is lost.") : null,
-      status.enabled ? h('p', { class: 'small' }, 'This device is linked to a different backup now; it will switch to this one.') : null,
+  const section = h('div', { class: 'sync-section' });
+
+  // Just signed up (or reset a password): show the recovery code until saved.
+  if (status.recoveryCode) {
+    section.append(h('div', { class: 'recovery-card' },
+      h('h3', {}, 'Save your recovery code'),
+      h('p', {}, "If you ever forget your password, this code is the only way back into your account. Keep it somewhere safe: your password manager, a note, or a photo."),
+      h('p', { class: 'recovery-code' }, status.recoveryCode),
       h('div', { class: 'actions' },
         h('button', {
           type: 'button',
-          class: 'btn btn-primary',
-          onclick: () => {
-            sync.enable(key);
-            toast('This device is linked to your backup.');
-            leave();
+          class: 'btn',
+          onclick: async () => {
+            try {
+              await navigator.clipboard.writeText(status.recoveryCode);
+              toast('Recovery code copied.');
+            } catch {
+              toast('Select the code and copy it.');
+            }
           },
-        }, 'Link this device'),
-        h('button', { type: 'button', class: 'btn', onclick: leave }, 'Cancel'),
+        }, 'Copy'),
+        h('button', { type: 'button', class: 'btn btn-primary', onclick: () => { sync.acknowledgeRecoveryCode(); render(); } }, "I've saved it"),
       ),
-    ),
+    ));
+  }
+
+  if (status.enabled) {
+    const changePassword = accountForm([
+      { name: 'password', label: 'Current password', type: 'password', autocomplete: 'current-password' },
+      { name: 'newPassword', label: 'New password', type: 'password', autocomplete: 'new-password', minLength: 8, hint: 'At least 8 characters.' },
+    ], 'Change password', async ({ password, newPassword }) => {
+      await sync.changePassword(password, newPassword);
+      render();
+      toast('Password changed. Your other devices will ask you to log in again.');
+    });
+    const deleteAccount = accountForm([
+      { name: 'password', label: 'Your password', type: 'password', autocomplete: 'current-password' },
+    ], 'Delete my account', async ({ password }) => {
+      if (!confirm('Delete your account and its backup? Your progress stays on this device, but your other devices will stop syncing. This cannot be undone.')) {
+        throw new Error('Not deleted.');
+      }
+      await sync.deleteAccount(password);
+      render();
+      toast('Your account and its backup are deleted. Your progress is still on this device.');
+    });
+    deleteAccount.querySelector('.btn-primary').className = 'btn btn-danger';
+
+    section.append(
+      h('h3', {}, 'Account and backup'),
+      h('p', {}, 'Logged in as ', h('strong', {}, status.username), '. Your progress, reads and notes back up automatically and stay in step on every device you log in on.'),
+      h('p', { class: 'sync-status', 'data-sync-status': '' }, syncStatusText(syncStatus) || ''),
+      h('div', { class: 'actions' },
+        h('button', { type: 'button', class: 'btn', onclick: () => sync.syncNow() }, 'Back up now'),
+        h('button', {
+          type: 'button',
+          class: 'btn',
+          onclick: async () => {
+            if (!confirm('Log out on this device? Your progress will be removed from this browser, but it is safe in your account. Log in again any time to get it back.')) return;
+            let done = await sync.logout();
+            if (!done) {
+              if (!confirm("Some changes haven't been backed up yet (are you offline?). Log out anyway and lose them?")) return;
+              done = await sync.logout({ force: true });
+            }
+            clearRecord();
+            toast('Logged out.');
+          },
+        }, 'Log out'),
+      ),
+      h('details', { class: 'account-settings' },
+        h('summary', {}, 'Account settings'),
+        h('h4', {}, 'Change password'),
+        changePassword,
+        h('h4', {}, 'Delete account'),
+        h('p', { class: 'small' }, 'Deletes your account and its online backup. Your progress stays on this device.'),
+        deleteAccount,
+      ),
+    );
+    return section;
+  }
+
+  // Logged out: create an account, log in, or recover with the code.
+  const mode = { current: status.signedOut ? 'login' : 'signup' };
+  const holder = h('div');
+  const tabs = h('div', { class: 'segmented account-tabs', role: 'group', 'aria-label': 'Account' });
+  const userField = (value = '') => ({ name: 'username', label: 'Username', autocomplete: 'username', value, hint: null });
+
+  function draw() {
+    for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode.current));
+    let form;
+    if (mode.current === 'signup') {
+      form = accountForm([
+        { ...userField(), hint: '3 to 32 letters or numbers (dots, dashes and underscores are fine too).' },
+        { name: 'password', label: 'Password', type: 'password', autocomplete: 'new-password', minLength: 8, hint: 'At least 8 characters.' },
+      ], 'Create account', async ({ username, password }) => {
+        await sync.signup(username, password);
+        render();
+        toast('Your account is ready. Everything on this device is backed up.');
+      });
+    } else if (mode.current === 'login') {
+      form = accountForm([
+        userField(status.username || ''),
+        { name: 'password', label: 'Password', type: 'password', autocomplete: 'current-password' },
+      ], 'Log in', async ({ username, password }) => {
+        await sync.login(username, password);
+        render();
+        toast('Logged in. Your progress is in step with your other devices.');
+      }, {
+        note: h('p', { class: 'small' }, h('button', { type: 'button', class: 'link-button', onclick: () => { mode.current = 'recover'; draw(); } }, 'Forgot your password?')),
+      });
+    } else {
+      form = accountForm([
+        userField(status.username || ''),
+        { name: 'recoveryCode', label: 'Recovery code', autocomplete: 'off', hint: 'The code you saved when you made your account.' },
+        { name: 'newPassword', label: 'New password', type: 'password', autocomplete: 'new-password', minLength: 8, hint: 'At least 8 characters.' },
+      ], 'Set new password and log in', async ({ username, recoveryCode, newPassword }) => {
+        await sync.recover(username, recoveryCode, newPassword);
+        render();
+        toast('New password set. You have a new recovery code; save it.');
+      });
+    }
+    holder.replaceChildren(form);
+  }
+
+  tabs.append(
+    h('button', { type: 'button', 'data-mode': 'signup', onclick: () => { mode.current = 'signup'; draw(); } }, 'Create account'),
+    h('button', { type: 'button', 'data-mode': 'login', onclick: () => { mode.current = 'login'; draw(); } }, 'Log in'),
   );
+  draw();
+
+  section.append(
+    h('h3', {}, 'Account and backup'),
+    status.signedOut
+      ? h('p', { class: 'sync-status warn' }, "You've been logged out on this device, perhaps because your password was changed. Log in again to keep backing up. Your progress here is safe.")
+      : h('p', {}, 'Create a free account to back up your progress, reads and notes automatically, and use them on any phone or computer. Anything already on this device goes into your account.'),
+    tabs,
+    holder,
+  );
+  return section;
 }
 
 // ---------------------------------------------------------------------------

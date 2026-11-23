@@ -1,27 +1,36 @@
-// Automatic backup, and keeping your devices in step, through the backup
-// service in worker/.
+// Your account, automatic backup, and keeping your devices in step, through
+// the backup service in worker/.
 //
-// Every linked device shares one sync key, a long random code. A few seconds
-// after each change the app fetches the backup and saves over it; it also
-// checks for changes from your other devices when it opens, comes back into
-// view, or comes back online. Each save names the backup revision it was
-// based on. If another device has saved since, the service refuses and
-// sends its copy; the two are combined (nothing is lost) and saved again.
-// A device with no unsaved changes simply takes the backup as it is, so
-// marking a daf unlearned or deleting a note on one device carries over to
-// the others.
+// You create an account (username and password) and log in on each device.
+// Your record is backed up in pieces: one per daf you've touched ("Arakhin 5":
+// when you learned it, your note, your passage reads) plus your starting
+// point. A few seconds after a change, only the pieces that changed are sent;
+// when the app opens, comes back into view or comes back online, it asks only
+// for the pieces changed since it last looked. So each backup stays small
+// however much you've learned.
 //
-// Only your record is synced (start, learned, notes, reads); display settings
-// stay with each device.
+// Each saved piece has a revision number. A device saving a piece says which
+// revision it last saw; if another device has changed that piece since, the
+// service sends its version back instead, the two are combined (nothing is
+// lost) and saved again. A piece you haven't changed here simply takes the
+// other device's version, so deletions (unmarking a daf, taking back a read,
+// clearing a note) carry over too.
+//
+// Only your record is synced; display settings stay with each device.
 
-import { normalizeState, mergeStates } from './progress.js';
+import { normalizeState, mergeStates, emptyState } from './progress.js';
 import { SYNC_URL } from './config.js';
 
-const STORAGE_KEY = 'daf-yomi:sync';
+const ACCOUNT_KEY = 'daf-yomi:account';
 const URL_OVERRIDE_KEY = 'daf-yomi:sync-url'; // for testing against a local service
-const SAVE_DELAY = 4000;
+const SAVE_DELAY = 3000;
 const RECHECK_EVERY = 5 * 60 * 1000;
-const KEY_ALPHABET = 'abcdefghjkmnpqrstvwxyz0123456789'; // no i, l, o, u: easy to read out
+const BATCH_BYTES = 500_000;
+const BATCH_ITEMS = 1000;
+const CLOSING_BYTES = 60_000; // the most a browser will send while a page closes
+
+// ---------------------------------------------------------------------------
+// Pieces of the record
 
 /** The parts of your record that are synced. */
 export function syncPayload(state) {
@@ -29,46 +38,96 @@ export function syncPayload(state) {
   return { version, start, learned, notes, reads };
 }
 
+/** JSON with object keys in a fixed order, so equal values always match. */
+export function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value ?? null);
+}
+
+/** A short fingerprint of some text (53-bit cyrb53). */
+export function hashString(text) {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+export const itemHash = (value) => hashString(stableStringify(value ?? null));
+
 /**
- * What to do with the backup just fetched, given the revision this device
- * last synced and whether it has changes not yet saved:
- *   none     the backup and this device already agree
- *   push     save this device's record over the backup
- *   replace  take the backup's record (it's newer, and nothing here is unsaved)
- *   merge    both have changed: combine them, then save
+ * Split a record into pieces: { start: {...}, 'Arakhin 5': { learned: { 14: date }, note, reads } }.
+ * Dafim with nothing on them have no piece.
  */
-export function planPull({ rev, dirty }, remote) {
-  if (!remote.data) return dirty || rev !== remote.rev ? 'push' : 'none';
-  if (remote.rev === rev) return dirty ? 'push' : 'none';
-  return dirty ? 'merge' : 'replace';
+export function toItems(state) {
+  const items = {};
+  if (state.start) items.start = { ...state.start };
+  const piece = (key) => (items[key] ??= {});
+  for (const [key, date] of Object.entries(state.learned)) {
+    const [cycle, tractate, daf] = key.split('/');
+    (piece(`${tractate} ${daf}`).learned ??= {})[cycle] = date;
+  }
+  for (const [key, note] of Object.entries(state.notes)) piece(key).note = note;
+  for (const [key, reads] of Object.entries(state.reads)) piece(key).reads = reads;
+  return items;
 }
 
-/** A new sync key: 32 characters, 160 random bits. */
-export function newSyncKey(random = (n) => crypto.getRandomValues(new Uint8Array(n))) {
-  return [...random(32)].map((b) => KEY_ALPHABET[b % 32]).join('');
+/** Put one piece into a record, replacing whatever it had for that daf (null removes it). */
+export function applyItem(state, key, value) {
+  if (key === 'start') {
+    state.start = value || null;
+    return;
+  }
+  const m = /^(.+) (\d+)$/.exec(key);
+  if (!m) return;
+  const [, tractate, daf] = m;
+  for (const k of Object.keys(state.learned)) {
+    const [, t, d] = k.split('/');
+    if (t === tractate && d === daf) delete state.learned[k];
+  }
+  delete state.notes[key];
+  delete state.reads[key];
+  if (!value) return;
+  for (const [cycle, date] of Object.entries(value.learned || {})) state.learned[`${cycle}/${tractate}/${daf}`] = date;
+  if (value.note) state.notes[key] = value.note;
+  if (value.reads) state.reads[key] = value.reads;
 }
 
-/** Find a sync key in a pasted link or code (spaces and dashes are ignored). */
-export function parseSyncKey(text) {
-  const fromLink = /#\/sync\/([a-z0-9]+)/i.exec(text || '');
-  const candidate = (fromLink ? fromLink[1] : String(text || '')).toLowerCase().replace(/[\s-]/g, '');
-  return /^[a-z0-9]{24,64}$/.test(candidate) ? candidate : null;
+/** Combine two versions of a piece, keeping everything from both. */
+export function mergeItem(key, a, b) {
+  const one = emptyState();
+  const two = emptyState();
+  applyItem(one, key, a);
+  applyItem(two, key, b);
+  return toItems(mergeStates(one, two))[key] ?? null;
 }
 
-/** The link that links another device: this page's address with the key after #. */
-export function syncLink(key, base = `${location.origin}${location.pathname}`) {
-  return `${base}#/sync/${key}`;
+/** The pieces that differ from what was last agreed with the backup. */
+export function dirtyKeys(items, hashes) {
+  const keys = new Set([...Object.keys(items), ...Object.keys(hashes)]);
+  return [...keys].filter((key) => itemHash(items[key]) !== (hashes[key] ?? itemHash(null)));
 }
 
-function loadConfig() {
+// ---------------------------------------------------------------------------
+// The sync engine
+
+function browserStorage() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return window.localStorage;
   } catch {
-    return {};
+    return null;
   }
 }
 
-function serviceUrl() {
+function defaultServiceUrl() {
   try {
     return localStorage.getItem(URL_OVERRIDE_KEY) || SYNC_URL;
   } catch {
@@ -76,103 +135,211 @@ function serviceUrl() {
   }
 }
 
-const hasRecord = (state) => Boolean(state.start)
-  || ['learned', 'notes', 'reads'].some((k) => Object.keys(state[k] || {}).length);
+class ServiceError extends Error {
+  constructor(message, { status, code } = {}) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
 
 /**
- * getState()        the app's current record
- * applyRemote(s)    replace the app's record with s (synced from elsewhere)
- * onStatus(status)  { enabled, state: 'off'|'syncing'|'saved'|'pending'|'offline'|'error', lastSynced, message }
+ * getState()          the app's current record
+ * applyRemote(state)  replace the app's record with this one (from another device)
+ * onStatus(status)    see status() below
+ * fetch, storage, serviceUrl, now: replaceable for tests.
  */
-export function createSync({ getState, applyRemote, onStatus }) {
-  let config = loadConfig(); // { key, rev, dirty, lastSynced }
-  let lastSyncedJson = null; // the record as last agreed with the backup, this visit
+export function createSync({
+  getState,
+  applyRemote,
+  onStatus = () => {},
+  fetch: fetchImpl = (...args) => fetch(...args),
+  storage = browserStorage(),
+  serviceUrl = defaultServiceUrl,
+  now = () => Date.now(),
+}) {
+  // { username, token, cursor, revs: { key: rev }, hashes: { key: hash }, lastSynced, recoveryCode }
+  let account = {};
+  try {
+    account = JSON.parse(storage?.getItem(ACCOUNT_KEY)) || {};
+  } catch {
+    account = {};
+  }
   let busy = false;
   let again = false;
   let timer = 0;
-  let changes = 0;
-  let current = { state: 'off' };
+  let current = { state: account.token ? 'pending' : 'off' };
 
   const available = () => Boolean(serviceUrl());
 
   function save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      storage?.setItem(ACCOUNT_KEY, JSON.stringify(account));
     } catch {
       // Without storage the app can't remember anything anyway.
     }
   }
 
-  function report(next) {
-    current = next;
-    onStatus({ ...next, enabled: Boolean(config.key), lastSynced: config.lastSynced || null, key: config.key || null });
+  function status() {
+    return {
+      ...current,
+      enabled: Boolean(account.token),
+      username: account.username || null,
+      signedOut: !account.token && Boolean(account.username),
+      lastSynced: account.lastSynced || null,
+      recoveryCode: account.recoveryCode || null,
+    };
   }
 
-  async function call(method, body, { keepalive = false } = {}) {
-    const res = await fetch(`${serviceUrl()}/v1/state`, {
-      method,
-      cache: 'no-store',
-      keepalive,
-      headers: { Authorization: `Bearer ${config.key}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (res.ok || res.status === 409) return { status: res.status, body: await res.json() };
-    throw new Error(`the backup service answered ${res.status}`);
+  function report(state, message) {
+    current = { state, message };
+    onStatus(status());
   }
 
-  function agreed(rev, payload) {
-    config.rev = rev;
-    config.lastSynced = new Date().toISOString();
-    lastSyncedJson = JSON.stringify(payload);
-    save();
+  async function call(method, path, body, { auth = true, keepalive = false } = {}) {
+    let res;
+    try {
+      res = await fetchImpl(`${serviceUrl()}${path}`, {
+        method,
+        cache: 'no-store',
+        keepalive,
+        headers: {
+          ...(auth && account.token ? { Authorization: `Bearer ${account.token}` } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new ServiceError("Couldn't reach the backup service. Are you online?", { code: 'offline' });
+    }
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    if (res.status === 401 && auth) {
+      // The session has ended (password changed elsewhere, or logged out).
+      account.token = null;
+      save();
+      throw new ServiceError('Please log in again.', { status: 401, code: 'signed_out' });
+    }
+    if (!res.ok) throw new ServiceError(data?.message || `The backup service answered ${res.status}.`, { status: res.status, code: data?.error });
+    return data;
   }
 
-  async function syncNow() {
-    if (!config.key || !available()) return;
+  // ---- Taking in pieces from the backup (synchronous, so nothing you do in
+  // the meantime can be overwritten).
+  function takeIn(pieces) {
+    const record = getState();
+    const mine = toItems(record);
+    const next = structuredClone(record);
+    for (const { key, rev, value } of pieces) {
+      const here = mine[key] ?? null;
+      const unchangedHere = itemHash(here) === (account.hashes[key] ?? itemHash(null));
+      applyItem(next, key, unchangedHere ? value : mergeItem(key, here, value));
+      account.revs[key] = rev;
+      account.hashes[key] = itemHash(value);
+    }
+    const clean = normalizeState(next);
+    clean.settings = record.settings;
+    applyRemote(clean);
+  }
+
+  async function pull() {
+    for (;;) {
+      const res = await call('GET', `/v1/changes?since=${account.cursor || 0}`);
+      if (res.items.length) takeIn(res.items);
+      account.cursor = res.rev;
+      save();
+      if (!res.more) return;
+    }
+  }
+
+  function unsavedPieces() {
+    const items = toItems(getState());
+    return dirtyKeys(items, account.hashes).map((key) => ({ key, value: items[key] ?? null, baseRev: account.revs[key] ?? 0 }));
+  }
+
+  function batches(pieces) {
+    const out = [];
+    let batch = [];
+    let size = 0;
+    for (const piece of pieces) {
+      const n = JSON.stringify(piece).length;
+      if (batch.length && (size + n > BATCH_BYTES || batch.length >= BATCH_ITEMS)) {
+        out.push(batch);
+        batch = [];
+        size = 0;
+      }
+      batch.push(piece);
+      size += n;
+    }
+    if (batch.length) out.push(batch);
+    return out;
+  }
+
+  function saved(batch, res) {
+    const sent = new Map(batch.map((p) => [p.key, p.value]));
+    for (const { key, rev } of res.written) {
+      account.revs[key] = rev;
+      account.hashes[key] = itemHash(sent.get(key));
+    }
+    // If nobody else saved in between, there's no need to fetch these back.
+    if (res.revBefore === account.cursor) account.cursor = res.rev;
+  }
+
+  /** Send the changed pieces. Returns how many came back changed by another device. */
+  async function push() {
+    let conflicts = 0;
+    for (const batch of batches(unsavedPieces())) {
+      const res = await call('POST', '/v1/changes', { items: batch });
+      saved(batch, res);
+      if (res.conflicts.length) {
+        takeIn(res.conflicts);
+        conflicts += res.conflicts.length;
+      }
+      save();
+    }
+    return conflicts;
+  }
+
+  let running = Promise.resolve();
+
+  /** Back up now (and take in other devices' changes). Resolves when done. */
+  function syncNow() {
+    if (!account.token || !available()) return Promise.resolve();
     if (busy) {
       again = true;
-      return;
+      return running;
     }
+    running = syncOnce();
+    return running;
+  }
+
+  async function syncOnce() {
     busy = true;
     clearTimeout(timer);
-    report({ state: 'syncing' });
+    report('syncing');
+    let ok = false;
     try {
-      for (let attempt = 0; ; attempt++) {
-        if (attempt === 4) throw new Error('other devices kept saving at the same moment');
-        const remote = (await call('GET')).body;
-        const plan = planPull({ rev: config.rev || 0, dirty: Boolean(config.dirty) }, remote);
-        if (plan === 'none') {
-          agreed(remote.rev, syncPayload(getState()));
-          break;
-        }
-        if (plan === 'replace') {
-          applyRemote(normalizeState(remote.data));
-          agreed(remote.rev, syncPayload(getState()));
-          break;
-        }
-        if (plan === 'merge') applyRemote(mergeStates(getState(), remote.data));
-        const payload = syncPayload(getState());
-        const seen = changes;
-        if (remote.data && JSON.stringify(payload) === JSON.stringify(remote.data)) {
-          agreed(remote.rev, payload);
-        } else {
-          const res = await call('PUT', { baseRev: remote.rev, data: payload });
-          if (res.status === 409) continue; // another device saved in between: fetch again and combine
-          agreed(res.body.rev, payload);
-        }
-        config.dirty = changes !== seen;
-        save();
-        break;
+      await pull();
+      for (let round = 0; (await push()) > 0; round++) {
+        if (round === 4) throw new ServiceError('Other devices kept saving at the same moment.');
       }
-      report({ state: config.dirty ? 'pending' : 'saved' });
+      account.lastSynced = new Date(now()).toISOString();
+      save();
+      ok = true;
+      report(unsavedPieces().length ? 'pending' : 'saved');
     } catch (error) {
-      report({ state: navigator.onLine === false ? 'offline' : 'error', message: error.message });
+      if (error.code === 'signed_out') report('signed-out', error.message);
+      else report(error.code === 'offline' ? 'offline' : 'error', error.message);
     } finally {
       busy = false;
     }
-    if (again || config.dirty) {
+    if (again || (ok && unsavedPieces().length)) {
       again = false;
-      schedule(config.dirty ? SAVE_DELAY : 0);
+      schedule(ok ? SAVE_DELAY : 0);
     }
   }
 
@@ -181,43 +348,37 @@ export function createSync({ getState, applyRemote, onStatus }) {
     timer = setTimeout(syncNow, delay);
   }
 
-  /** Call after every local save; does nothing if the synced record didn't change. */
-  function changed(state) {
-    if (!config.key) return;
-    const json = JSON.stringify(syncPayload(state));
-    if (json === lastSyncedJson && !config.dirty) return;
-    changes++;
-    config.dirty = true;
-    save();
-    if (current.state !== 'syncing') report({ state: 'pending' });
+  /** Call after every local save. */
+  function changed() {
+    if (!account.token) return;
+    if (current.state !== 'syncing') report('pending');
     schedule();
   }
 
-  // Leaving the page: save straight away if there's anything unsaved. A
-  // conflict here is fine; it'll be combined next time the app opens.
+  // Leaving the page: send anything unsaved straight away, if it's small
+  // enough for the browser to send while closing. If not, or if another
+  // device changed the same daf, it's sorted out next time the app opens.
   function flush() {
-    if (!config.key || !config.dirty || busy) return;
-    const body = { baseRev: config.rev || 0, data: syncPayload(getState()) };
-    if (JSON.stringify(body).length > 60000) return; // too big to send while closing
-    call('PUT', body, { keepalive: true }).then((res) => {
-      if (res.status === 200) {
-        agreed(res.body.rev, body.data);
-        config.dirty = false;
-        save();
-      }
+    if (!account.token || busy) return;
+    const pieces = unsavedPieces();
+    if (!pieces.length || JSON.stringify(pieces).length > CLOSING_BYTES) return;
+    call('POST', '/v1/changes', { items: pieces }, { keepalive: true }).then((res) => {
+      saved(pieces, res);
+      save();
     }).catch(() => {});
   }
 
   let lastCheck = 0;
   function check() {
-    if (!config.key || Date.now() - lastCheck < 15000) return;
-    lastCheck = Date.now();
+    if (!account.token || now() - lastCheck < 15000) return;
+    lastCheck = now();
     syncNow();
   }
 
+  /** Begin: sync now, and whenever the app comes back into view or online. */
   function start() {
     if (!available()) return;
-    report({ state: config.key ? 'pending' : 'off' });
+    report(account.token ? 'pending' : account.username ? 'signed-out' : 'off');
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') check();
       else flush();
@@ -230,26 +391,73 @@ export function createSync({ getState, applyRemote, onStatus }) {
     setInterval(() => {
       if (document.visibilityState === 'visible') syncNow();
     }, RECHECK_EVERY);
-    if (config.key) syncNow();
+    if (account.token) syncNow();
   }
 
-  /** Start backing up with a new key, or link to an existing backup with one. */
-  function enable(key = newSyncKey()) {
-    config = { key, rev: 0, dirty: hasRecord(getState()), lastSynced: null };
-    lastSyncedJson = null;
+  // ---- Account
+
+  // A fresh start with an account: everything already on this device is
+  // combined with what's in the account.
+  async function begin(res, extra = {}) {
+    account = { username: res.username, token: res.token, cursor: 0, revs: {}, hashes: {}, lastSynced: null, ...extra };
     save();
-    syncNow();
-    return key;
+    await syncNow();
   }
 
-  /** Stop syncing on this device. The backup and this device's record both stay. */
-  function disable() {
+  async function signup(username, password) {
+    const res = await call('POST', '/v1/signup', { username, password }, { auth: false });
+    await begin(res, { recoveryCode: res.recoveryCode });
+    return res.username;
+  }
+
+  async function login(username, password) {
+    await begin(await call('POST', '/v1/login', { username, password }, { auth: false }));
+  }
+
+  async function recover(username, recoveryCode, newPassword) {
+    const res = await call('POST', '/v1/recover', { username, recoveryCode, newPassword }, { auth: false });
+    await begin(res, { recoveryCode: res.recoveryCode });
+  }
+
+  async function changePassword(password, newPassword) {
+    const res = await call('POST', '/v1/password', { password, newPassword });
+    account.token = res.token;
+    save();
+  }
+
+  /** Log out on this device. Returns false (and stays logged in) if there are changes not yet backed up, unless forced. */
+  async function logout({ force = false } = {}) {
+    if (account.token) await syncNow();
+    if (account.token && !force && unsavedPieces().length) return false;
+    try {
+      if (account.token) await call('POST', '/v1/logout', {});
+    } catch {
+      // Logging out here matters more than telling the service.
+    }
     clearTimeout(timer);
-    config = {};
-    lastSyncedJson = null;
+    account = {};
     save();
-    report({ state: 'off' });
+    report('off');
+    return true;
   }
 
-  return { start, enable, disable, changed, syncNow, available, status: () => ({ ...current, enabled: Boolean(config.key), lastSynced: config.lastSynced || null, key: config.key || null }) };
+  async function deleteAccount(password) {
+    await call('POST', '/v1/delete-account', { password });
+    clearTimeout(timer);
+    account = {};
+    save();
+    report('off');
+  }
+
+  function acknowledgeRecoveryCode() {
+    delete account.recoveryCode;
+    save();
+    onStatus(status());
+  }
+
+  return {
+    start, syncNow, changed, available, status,
+    signup, login, recover, changePassword, logout, deleteAccount, acknowledgeRecoveryCode,
+    hasUnsavedChanges: () => Boolean(account.token) && unsavedPieces().length > 0,
+  };
 }

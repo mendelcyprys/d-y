@@ -794,12 +794,36 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   .toast { transition: none; }
 }
 
-/* ---- Automatic backup ---------------------------------------------------- */
+/* ---- Account and backup ------------------------------------------------- */
 
 .data-card h3 { font-size: 1rem; margin: 1.25rem 0 .4rem; }
 .data-card h3:first-of-type { margin-top: .5rem; }
-.sync-section { padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.data-card h4 { font-size: .95rem; margin: 1rem 0 .4rem; }
+.sync-section { padding-bottom: .75rem; border-bottom: 1px solid var(--line); }
 .sync-status { font-weight: 600; color: var(--learned); }
+.sync-status.warn { color: var(--danger); }
 .sync-status:empty { display: none; }
-.sync-section .goto-form input[type="text"] { flex: 1 1 14rem; min-width: 0; font-size: .85rem; }
-.sync-link-existing summary { cursor: pointer; color: var(--accent); font-weight: 600; margin: .5rem 0; }
+.account-tabs { margin: .25rem 0 .75rem; }
+.account-form { display: grid; gap: .6rem; max-width: 26rem; }
+.account-form .actions { margin-top: .25rem; }
+.field { display: grid; gap: .2rem; font-weight: 600; font-size: .9rem; }
+.field input { font-weight: 400; }
+.field .small { font-weight: 400; }
+.form-error { margin: 0; color: var(--danger); font-weight: 600; }
+.form-error:empty { display: none; }
+.account-settings summary { cursor: pointer; color: var(--accent); font-weight: 600; margin: .5rem 0; }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.recovery-card {
+  margin: .5rem 0 1rem;
+  padding: .9rem 1rem;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.recovery-card h3 { margin-top: 0; }
+.recovery-code {
+  font: 700 1.25rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .05em;
+  word-break: break-all;
+  user-select: all;
+}
