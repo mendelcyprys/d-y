@@ -81,10 +81,20 @@ function dafNameHe(index) {
   return `${tractate.he} ${S.hebrewNumeral(daf)}`;
 }
 
-function dafHref(index) {
+/** Link to a daf, or to a passage on it ("#/daf/arakhin/5/5a:7"). */
+function dafHref(index, passage = null) {
   const { tractate, daf, cycle } = S.dafAtIndex(index);
   const suffix = cycle === currentCycle() ? '' : `/c${cycle}`;
-  return `#/daf/${S.slug(tractate)}/${daf}${suffix}`;
+  const where = passage ? `/${encodeURIComponent(passage).replace(/%3A/gi, ':')}` : '';
+  return `#/daf/${S.slug(tractate)}/${daf}${suffix}${where}`;
+}
+
+/** "5a:7" -> "5a · 7"; "64a:all" -> "64a"; anything else as it is. */
+function placeName(passage) {
+  if (!passage) return '';
+  const m = /^(.+):(\d+|all)$/.exec(passage);
+  if (!m) return passage;
+  return m[2] === 'all' ? m[1] : `${m[1]} · ${m[2]}`;
 }
 
 function persist() {
@@ -146,6 +156,123 @@ function syncStatusText(status) {
     default: return status.lastSynced ? `Backed up ${minutesAgo(status.lastSynced)}.` : 'Backed up.';
   }
 }
+
+// ---- Bookmarks, and the bookmarks-and-recent panel in the top bar.
+
+function ribbonIcon() {
+  return svg('svg', { viewBox: '0 0 24 24', width: '16', height: '16', 'aria-hidden': 'true' },
+    svg('path', { d: 'M7 4.5h10v15.5l-5-3.6-5 3.6Z' }));
+}
+
+function bookmarkName(index, passage) {
+  return passage ? `${dafName(index)}, ${placeName(passage)}` : dafName(index);
+}
+
+function askLabel(index, passage) {
+  const { tractate, daf } = S.dafAtIndex(index);
+  const existing = P.findBookmark(state, tractate, daf, passage);
+  const label = prompt(`A label for ${bookmarkName(index, passage)} (optional):`, existing?.label || '');
+  if (label == null) return;
+  P.setBookmark(state, tractate, daf, passage, label.trim().slice(0, 200));
+  persist();
+  refreshMarks();
+  if (!marksPanel.hidden) drawMarksPanel();
+}
+
+function toggleBookmark(index, passage = null) {
+  const { tractate, daf } = S.dafAtIndex(index);
+  if (P.findBookmark(state, tractate, daf, passage)) {
+    P.removeBookmark(state, tractate, daf, passage);
+    persist();
+    toast(`Removed the bookmark on ${bookmarkName(index, passage)}.`);
+  } else {
+    P.setBookmark(state, tractate, daf, passage);
+    persist();
+    toast(`Bookmarked ${bookmarkName(index, passage)}.`, 6000, { label: 'Add a label', onClick: () => askLabel(index, passage) });
+  }
+  refreshMarks();
+  if (!marksPanel.hidden) drawMarksPanel();
+}
+
+const marksIndicator = document.getElementById('marks-indicator');
+const marksButton = document.getElementById('marks-button');
+const marksPanel = document.getElementById('marks-panel');
+
+function closeMarksPanel() {
+  marksPanel.hidden = true;
+  marksButton.setAttribute('aria-expanded', 'false');
+}
+
+function drawMarksPanel() {
+  const here = readingNow && document.querySelector('.amud-section') ? readingNow : null;
+  const parts = [];
+
+  if (here) {
+    const { tractate, daf } = S.dafAtIndex(here.index);
+    const marked = P.findBookmark(state, tractate, daf, here.passage);
+    parts.push(h('button', {
+      type: 'button',
+      class: marked ? 'btn btn-learned bookmark-here' : 'btn btn-primary bookmark-here',
+      'aria-pressed': String(Boolean(marked)),
+      onclick: () => toggleBookmark(here.index, here.passage),
+    }, ribbonIcon(), marked ? `Bookmarked: ${bookmarkName(here.index, here.passage)}` : `Bookmark this place: ${bookmarkName(here.index, here.passage)}`));
+  }
+
+  const go = (index, passage) => (event) => {
+    event.preventDefault();
+    closeMarksPanel();
+    goTo(index, passage);
+  };
+
+  const recent = loadRecent();
+  parts.push(h('h3', {}, 'Recent'));
+  parts.push(recent.length
+    ? h('ul', { class: 'marks-list' }, recent.map((r) => h('li', {},
+      h('a', { href: dafHref(r.index, r.passage), onclick: go(r.index, r.passage) },
+        h('span', {}, dafName(r.index)),
+        h('span', { class: 'small' }, [r.passage ? placeName(r.passage) : 'start', minutesAgo(new Date(r.at).toISOString())].join(' · '))),
+    )))
+    : h('p', { class: 'small' }, 'Dafim you open will appear here, ready to pick up where you left off.'));
+
+  const bookmarks = P.allBookmarks(state);
+  parts.push(h('h3', {}, 'Bookmarks'));
+  parts.push(bookmarks.length
+    ? h('ul', { class: 'marks-list' }, bookmarks.map((b) => {
+      const index = S.indexFor(currentCycle(), b.tractate, b.daf);
+      return h('li', { class: 'bookmark-item' },
+        h('a', { href: dafHref(index, b.passage), onclick: go(index, b.passage) },
+          h('span', {}, b.passage ? `${dafName(index)} · ${placeName(b.passage)}` : dafName(index)),
+          b.label ? h('span', { class: 'small bookmark-label' }, b.label) : null),
+        h('span', { class: 'bookmark-actions' },
+          h('button', { type: 'button', class: 'link-button', onclick: () => askLabel(index, b.passage), 'aria-label': `Label for ${bookmarkName(index, b.passage)}` }, b.label ? 'Edit' : 'Label'),
+          h('button', { type: 'button', class: 'link-button danger', onclick: () => toggleBookmark(index, b.passage), 'aria-label': `Remove the bookmark on ${bookmarkName(index, b.passage)}` }, 'Remove')));
+    }))
+    : h('p', { class: 'small' }, 'No bookmarks yet. While reading, tap "Bookmark this place" here, or the ribbon beside any passage.'));
+
+  marksPanel.replaceChildren(...parts);
+}
+
+marksButton.addEventListener('click', () => {
+  if (!marksPanel.hidden) {
+    closeMarksPanel();
+    return;
+  }
+  closeSyncPanel();
+  drawMarksPanel();
+  marksPanel.hidden = false;
+  marksButton.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('click', (event) => {
+  // (The path the click took, since the panel may have redrawn under it.)
+  const path = event.composedPath();
+  if (!path.includes(marksIndicator) && !path.some((el) => el.classList?.contains('toast'))) closeMarksPanel();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !marksPanel.hidden) {
+    closeMarksPanel();
+    marksButton.focus();
+  }
+});
 
 // ---- The backup icon in the top bar, and the panel it opens.
 
@@ -235,12 +362,13 @@ syncButton.addEventListener('click', () => {
     closeSyncPanel();
     return;
   }
+  closeMarksPanel();
   drawSyncPanel();
   syncPanel.hidden = false;
   syncButton.setAttribute('aria-expanded', 'true');
 });
 document.addEventListener('click', (event) => {
-  if (!syncIndicator.contains(event.target)) closeSyncPanel();
+  if (!event.composedPath().includes(syncIndicator)) closeSyncPanel();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !syncPanel.hidden) {
@@ -328,11 +456,16 @@ function parseRoute() {
   const [view, ...rest] = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (view === 'daf') {
     const tractate = S.TRACTATES.find((t) => S.slug(t) === rest[0]);
-    const cycleMatch = /^c(\d+)$/.exec(rest[2] || '');
-    const cycle = cycleMatch ? Number(cycleMatch[1]) : currentCycle();
+    let cycle = currentCycle();
+    let passage = null;
+    for (const part of rest.slice(2)) {
+      const cycleMatch = /^c(\d+)$/.exec(part);
+      if (cycleMatch) cycle = Number(cycleMatch[1]);
+      else passage = decodeURIComponent(part).slice(0, 60);
+    }
     if (tractate) {
       try {
-        return { view: 'daf', index: S.indexFor(cycle, tractate, Number(rest[1])) };
+        return { view: 'daf', index: S.indexFor(cycle, tractate, Number(rest[1])), passage };
       } catch {
         // Not a daf in that tractate; fall through to the Learn page.
       }
@@ -360,7 +493,10 @@ function render() {
   if (route.view === 'progress') page = progressPage();
   else if (route.view === 'notes') page = notesPage();
   else if (route.view === 'schedule') page = schedulePage();
-  else if (route.view === 'daf') page = dafPage(route.index, { home: false });
+  else if (route.view === 'daf') {
+    pendingJump = route.passage ? { index: route.index, passage: route.passage } : null;
+    page = dafPage(route.index, { home: false });
+  }
   else page = dafPage(P.position(state) ?? todayIndex(), { home: true });
 
   main.replaceChildren(page);
@@ -390,9 +526,69 @@ document.addEventListener('keydown', (event) => {
 // ---------------------------------------------------------------------------
 // The daf page (also the Learn page, which shows your daf)
 
+// ---------------------------------------------------------------------------
+// Where you are: the daf and passage on screen, recently opened dafim (kept
+// on this device only), and jumping straight to a passage.
+
+const RECENT_KEY = 'daf-yomi:recent';
+let readingNow = null; // { index, passage } of the daf on screen
+let pendingJump = null; // { index, passage } to scroll to once the text loads
+let refreshMarks = () => {}; // redraws the read and bookmark marks on the daf on screen
+
+function loadRecent() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function noteRecent(index, passage = null) {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(P.addRecent(loadRecent(), { index, passage, at: Date.now() })));
+  } catch {
+    // Recent dafim are a convenience; without storage there just aren't any.
+  }
+}
+
+/** Where on screen the passage you're reading starts: a quarter of the way down, below the top bar. */
+function readingLineY() {
+  const barBottom = topbar.getBoundingClientRect().bottom;
+  return barBottom + (window.innerHeight - barBottom) / 4;
+}
+
+/** Scroll a passage to the reading line, and flash it so you can see where you've landed. */
+function scrollToPassage(passage, { flash = true } = {}) {
+  const mark = document.querySelector(`.amud-section .seg-mark[data-passage="${CSS.escape(passage)}"]`);
+  const row = mark?.closest('.seg-row');
+  if (!row) return false;
+  window.scrollTo({ top: window.scrollY + row.getBoundingClientRect().top - (readingLineY() - 1), behavior: 'auto' });
+  if (flash) {
+    row.classList.remove('is-target');
+    void row.offsetWidth; // restart the animation
+    row.classList.add('is-target');
+    setTimeout(() => row.classList.remove('is-target'), 2200);
+  }
+  return true;
+}
+
+/** Go to a daf (and passage), or just scroll there if that daf is already on screen. */
+function goTo(index, passage = null) {
+  const href = dafHref(index, passage);
+  if (readingNow?.index === index && document.querySelector('.amud-section')) {
+    if (passage) scrollToPassage(passage);
+    else document.querySelector('.daf-head')?.scrollIntoView({ behavior: smooth(), block: 'start' });
+    history.replaceState(null, '', href);
+    return;
+  }
+  location.hash = href;
+}
+
 function dafPage(index, { home }) {
   const { tractate } = S.dafAtIndex(index);
   document.title = `${dafName(index)} · Daf Yomi`;
+  readingNow = { index, passage: null };
+  noteRecent(index, pendingJump?.index === index ? pendingJump.passage : null);
 
   const page = h('div', { class: 'daf-layout' });
   const column = h('div', { class: 'daf-main' });
@@ -439,7 +635,16 @@ function dafPage(index, { home }) {
   side.append(...[notesCard(tractate, S.dafAtIndex(index).daf), home ? reviewCard() : null, gotoCard(index)].filter(Boolean));
   page.append(column, resizeHandle(page, column), side);
   applyTextWidth(page);
-  stopTracking = trackReading(page);
+  // As you read, remember the passage you're on (for Recent, and for "Bookmark this place").
+  stopTracking = trackReading(page, {
+    onPosition: ({ started, passage }) => {
+      const now = started ? passage : null;
+      if (readingNow?.index === index && readingNow.passage !== now) {
+        readingNow = { index, passage: now };
+        if (now) noteRecent(index, now);
+      }
+    },
+  });
   return page;
 }
 
@@ -508,7 +713,7 @@ function passageName(row) {
   return n === 'all' ? amud : `${amud} · ${n}`;
 }
 
-function trackReading(page) {
+function trackReading(page, { onPosition = () => {} } = {}) {
   let frame = 0;
   let dragging = false;
   let tickSignature = '';
@@ -519,7 +724,7 @@ function trackReading(page) {
     const rows = [...page.querySelectorAll('.amud-section .seg-row')];
     if (!rows.length) return null;
     const barBottom = topbar.getBoundingClientRect().bottom;
-    const readAt = barBottom + (window.innerHeight - barBottom) / 4;
+    const readAt = readingLineY();
     const tops = rows.map((row) => row.getBoundingClientRect().top);
     const bottom = rows[rows.length - 1].getBoundingClientRect().bottom;
     const atEnd = window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
@@ -545,6 +750,7 @@ function trackReading(page) {
       const left = `${(ticks[i] * 100).toFixed(2)}%`;
       if (tick.style.left !== left) tick.style.left = left;
       tick.classList.toggle('is-read', row.querySelector('.seg-mark').classList.contains('is-read'));
+      tick.classList.toggle('is-bookmarked', row.querySelector('.seg-mark').classList.contains('is-bookmarked'));
     });
     for (const label of readingLabels.children) label.style.left = `${(ticks[Number(label.dataset.row)] * 100).toFixed(2)}%`;
   }
@@ -569,6 +775,7 @@ function trackReading(page) {
     readingHead.hidden = !started;
     readingHead.style.left = `${fill * 100}%`;
     readingHead.textContent = n === 'all' ? amud : n;
+    onPosition({ started, passage: row.querySelector('.seg-mark').dataset.passage });
     readingBar.setAttribute('aria-valuemin', '1');
     readingBar.setAttribute('aria-valuemax', String(rows.length));
     readingBar.setAttribute('aria-valuenow', String(current + 1));
@@ -579,7 +786,11 @@ function trackReading(page) {
       closeReadingMenu();
       return;
     }
-    readingStatus.textContent = n === 'all' ? `${amud} · ${pct}%` : `${amud} · ${n}/${total} · ${pct}%`;
+    // (On narrow screens the percentage is left off; the bar below shows it.)
+    readingStatus.replaceChildren(
+      h('span', {}, n === 'all' ? amud : `${amud} · ${n}/${total}`),
+      h('span', { class: 'reading-pct' }, ` · ${pct}%`),
+    );
     readingStatus.setAttribute('aria-label', n === 'all'
       ? `You're on ${amud}, ${pct}% of the way through. Jump to…`
       : `You're on ${amud}, passage ${n} of ${total}, ${pct}% of the way through. Jump to…`);
@@ -598,8 +809,7 @@ function trackReading(page) {
     const m = measure();
     if (!m) return;
     const index = Math.min(m.rows.length - 1, Math.max(0, i));
-    const top = m.rows[index].getBoundingClientRect().top;
-    window.scrollTo({ top: window.scrollY + top - (m.readAt - 1), behavior: 'auto' });
+    scrollToPassage(m.rows[index].querySelector('.seg-mark').dataset.passage, { flash: false });
     return m.rows[index];
   }
 
@@ -679,7 +889,7 @@ function trackReading(page) {
 
   const onStatusClick = () => (readingMenu.hidden ? openMenu() : closeReadingMenu());
   const onDocumentClick = (event) => {
-    if (!readingNav.contains(event.target)) closeReadingMenu();
+    if (!event.composedPath().includes(readingNav)) closeReadingMenu();
   };
   const onKey = (event) => {
     if (event.key === 'Escape' && !readingMenu.hidden) {
@@ -1111,6 +1321,12 @@ function textCard(index, { onReadThrough } = {}) {
         ? `Read ${timesWord(count)}, last ${relativeDay(S.parseIsoDate(dates[count - 1]))}. Click when you read it again.`
         : 'Mark as read';
       mark.querySelector('.unread-btn').hidden = count === 0;
+      const bookmark = P.findBookmark(state, tractate, daf, passage);
+      const bm = mark.querySelector('.bm-btn');
+      mark.classList.toggle('is-bookmarked', Boolean(bookmark));
+      bm.setAttribute('aria-pressed', String(Boolean(bookmark)));
+      bm.setAttribute('aria-label', bookmark ? `Remove the bookmark on ${name}` : `Bookmark ${name}`);
+      bm.title = bookmark ? `Bookmarked${bookmark.label ? `: ${bookmark.label}` : ''}. Click to remove.` : 'Bookmark this passage';
     }
 
     for (const section of body.querySelectorAll('.amud-section')) {
@@ -1156,6 +1372,10 @@ function textCard(index, { onReadThrough } = {}) {
       changeReads(() => P.removeRead(state, tractate, daf, mark.dataset.passage));
       return;
     }
+    if (mark && event.target.closest('.bm-btn')) {
+      toggleBookmark(index, mark.dataset.passage);
+      return;
+    }
     const amud = event.target.closest('.amud-read-btn');
     if (amud) {
       changeReads(() => P.finishReading(state, tractate, daf, passagesIn(amud.closest('.amud-section')), today()));
@@ -1197,7 +1417,12 @@ function textCard(index, { onReadThrough } = {}) {
       const text = await loadDaf(index);
       body.replaceChildren(...text.sections.map(sectionView));
       updateReading();
+      refreshMarks = updateReading;
       gemaraShown = true;
+      if (pendingJump?.index === index) {
+        scrollToPassage(pendingJump.passage);
+        pendingJump = null;
+      }
       showRashi().finally(loadContext);
       const { he, en } = text.versions;
       credits.replaceChildren(
@@ -1331,7 +1556,8 @@ function sectionView(section) {
     'data-number': String(n),
   },
   h('button', { type: 'button', class: 'read-btn' }),
-  h('button', { type: 'button', class: 'unread-btn', 'aria-label': 'Take back one read', title: 'Take back one read', hidden: true }, '−'));
+  h('button', { type: 'button', class: 'unread-btn', 'aria-label': 'Take back one read', title: 'Take back one read', hidden: true }, '−'),
+  h('button', { type: 'button', class: 'bm-btn', 'aria-pressed': 'false' }, ribbonIcon()));
   const row = (n, ...cells) => h('div', { class: 'seg-row' }, mark(n), h('div', { class: 'seg-content' }, cells));
 
   // When both languages have the same number of passages, line them up side

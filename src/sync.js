@@ -36,8 +36,8 @@ const CLOSING_BYTES = 60_000; // the most a browser will send while a page close
 
 /** The parts of your record that are synced. */
 export function syncPayload(state) {
-  const { version, start, learned, notes, reads } = state;
-  return { version, start, learned, notes, reads };
+  const { version, start, learned, notes, reads, bookmarks } = state;
+  return { version, start, learned, notes, reads, bookmarks };
 }
 
 /** JSON with object keys in a fixed order, so equal values always match. */
@@ -66,7 +66,7 @@ export function hashString(text) {
 export const itemHash = (value) => hashString(stableStringify(value ?? null));
 
 /**
- * Split a record into pieces: { start: {...}, 'Arakhin 5': { learned: { 14: date }, note, reads } }.
+ * Split a record into pieces: { start: {...}, 'Arakhin 5': { learned: { 14: date }, note, reads, bookmarks } }.
  * Dafim with nothing on them have no piece.
  */
 export function toItems(state) {
@@ -79,6 +79,7 @@ export function toItems(state) {
   }
   for (const [key, note] of Object.entries(state.notes)) piece(key).note = note;
   for (const [key, reads] of Object.entries(state.reads)) piece(key).reads = reads;
+  for (const [key, bookmarks] of Object.entries(state.bookmarks || {})) piece(key).bookmarks = bookmarks;
   return items;
 }
 
@@ -97,10 +98,12 @@ export function applyItem(state, key, value) {
   }
   delete state.notes[key];
   delete state.reads[key];
+  delete state.bookmarks[key];
   if (!value) return;
   for (const [cycle, date] of Object.entries(value.learned || {})) state.learned[`${cycle}/${tractate}/${daf}`] = date;
   if (value.note) state.notes[key] = value.note;
   if (value.reads) state.reads[key] = value.reads;
+  if (value.bookmarks) state.bookmarks[key] = value.bookmarks;
 }
 
 /** Combine two versions of a piece, keeping everything from both. */

@@ -9,6 +9,7 @@
 //     learned: { '14/Arakhin/2': '2026-11-22', ... },   // daf -> date learned
 //     notes: { 'Arakhin 2': { text: '...', updated: '2026-11-22T18:00:00.000Z' } },
 //     reads: { 'Arakhin 2': { '2a:3': ['2026-11-22', '2026-11-25'] } },  // passage -> each read
+//     bookmarks: { 'Arakhin 2': [{ passage: '2a:7', label: '', created, updated }] },  // passage null = the daf
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
 //                 textWidth: null | pixels }
 //   }
@@ -34,6 +35,7 @@ export function emptyState() {
     learned: {},
     notes: {},
     reads: {},
+    bookmarks: {},
     settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null },
   };
 }
@@ -293,6 +295,62 @@ export function readingSummary(counts) {
 }
 
 // ---------------------------------------------------------------------------
+// Bookmarks: a daf, or a passage on it, with an optional label. Like notes,
+// they belong to the daf rather than a cycle. One bookmark per passage.
+
+export function getBookmarks(state, tractate, daf) {
+  return state.bookmarks[noteKey(tractate, daf)] || [];
+}
+
+export function findBookmark(state, tractate, daf, passage = null) {
+  return getBookmarks(state, tractate, daf).find((b) => b.passage === passage) || null;
+}
+
+/** Add a bookmark, or change its label if there is one already. */
+export function setBookmark(state, tractate, daf, passage = null, label = '', now = new Date()) {
+  const key = noteKey(tractate, daf);
+  const list = (state.bookmarks[key] ??= []);
+  const iso = now.toISOString();
+  const existing = list.find((b) => b.passage === passage);
+  if (existing) {
+    existing.label = label;
+    existing.updated = iso;
+  } else {
+    list.push({ passage, label, created: iso, updated: iso });
+  }
+}
+
+export function removeBookmark(state, tractate, daf, passage = null) {
+  const key = noteKey(tractate, daf);
+  const list = (state.bookmarks[key] || []).filter((b) => b.passage !== passage);
+  if (list.length) state.bookmarks[key] = list;
+  else delete state.bookmarks[key];
+}
+
+/** All bookmarks, newest first: [{ tractate, daf, passage, label, created, updated }]. */
+export function allBookmarks(state) {
+  return Object.entries(state.bookmarks)
+    .flatMap(([key, list]) => {
+      const found = parseDafKey(key);
+      return found ? list.map((b) => ({ ...found, ...b })) : [];
+    })
+    .sort((a, b) => (a.created < b.created ? 1 : a.created > b.created ? -1 : 0));
+}
+
+// ---------------------------------------------------------------------------
+// Recently opened dafim (kept on each device, not backed up): the newest
+// first, each with the passage you'd reached.
+
+export const RECENT_MAX = 10;
+
+/** Put a daf at the top of the list, keeping the passage you'd reached unless a new one is given. */
+export function addRecent(list, { index, passage, at }) {
+  const old = list.find((r) => r.index === index);
+  const entry = { index, passage: passage ?? old?.passage ?? null, at };
+  return [entry, ...list.filter((r) => r.index !== index)].slice(0, RECENT_MAX);
+}
+
+// ---------------------------------------------------------------------------
 // Loading, importing and merging
 
 /** Turn anything that might be saved state into valid state, dropping junk. */
@@ -333,6 +391,27 @@ export function normalizeState(raw) {
     }
   }
 
+  for (const [key, list] of Object.entries(raw.bookmarks || {})) {
+    const found = parseDafKey(key);
+    if (!found || !Array.isArray(list)) continue;
+    const seen = new Set();
+    const clean = [];
+    for (const b of list.slice(0, 100)) {
+      const passage = b?.passage == null ? null : String(b.passage);
+      if (passage != null && passage.length > 60) continue;
+      if (seen.has(passage)) continue;
+      seen.add(passage);
+      const created = typeof b.created === 'string' ? b.created : new Date(0).toISOString();
+      clean.push({
+        passage,
+        label: typeof b.label === 'string' ? b.label.slice(0, 200) : '',
+        created,
+        updated: typeof b.updated === 'string' ? b.updated : created,
+      });
+    }
+    if (clean.length) state.bookmarks[noteKey(found.tractate, found.daf)] = clean;
+  }
+
   const settings = raw.settings || {};
   if (LAYOUTS.includes(settings.layout)) state.settings.layout = settings.layout;
   const scale = Number(settings.fontScale);
@@ -366,6 +445,15 @@ export function mergeStates(current, incoming) {
     for (const [passage, dates] of Object.entries(passages)) {
       const mine = merged.reads[key]?.[passage] || [];
       if (dates.length > mine.length) (merged.reads[key] ??= {})[passage] = dates;
+    }
+  }
+  // Bookmarks: everything from both; for the same passage, the latest edit.
+  for (const [key, list] of Object.entries(b.bookmarks)) {
+    const mine = (merged.bookmarks[key] ??= []);
+    for (const bookmark of list) {
+      const i = mine.findIndex((m) => m.passage === bookmark.passage);
+      if (i < 0) mine.push(bookmark);
+      else if (bookmark.updated > mine[i].updated) mine[i] = bookmark;
     }
   }
   if (!merged.start) merged.start = b.start;

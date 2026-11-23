@@ -128,6 +128,7 @@ test('saved state is cleaned up when loaded', () => {
   assert.deepEqual(Object.keys(state.learned), ['14/Arakhin/2']);
   assert.deepEqual(Object.keys(state.notes), ['Arakhin 2']);
   assert.deepEqual(state.settings, { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, textWidth: null });
+  assert.deepEqual(state.bookmarks, {});
   assert.equal(P.normalizeState({ settings: { textWidth: 1100.4 } }).settings.textWidth, 1100);
   assert.equal(P.normalizeState({ settings: { textWidth: 50 } }).settings.textWidth, null);
   assert.equal(P.normalizeState({ settings: { textWidth: 'wide' } }).settings.textWidth, null);
@@ -203,4 +204,48 @@ test('passage reads survive loading and merge on import', () => {
   const merged = P.mergeStates(loaded, backup);
   assert.equal(P.readCount(merged, arakhin, 2, '2a:1'), 2);
   assert.equal(P.readCount(merged, arakhin, 3, '3a:1'), 1);
+});
+
+test('bookmarks: one per passage, with a label, newest first', () => {
+  const state = P.emptyState();
+  P.setBookmark(state, arakhin, 5, '5a:7', '', new Date('2026-11-22T10:00:00Z'));
+  P.setBookmark(state, arakhin, 5, null, 'the whole daf', new Date('2026-11-22T11:00:00Z'));
+  P.setBookmark(state, arakhin, 9, '9b:2', 'chatzi chatzi', new Date('2026-11-23T09:00:00Z'));
+  P.setBookmark(state, arakhin, 5, '5a:7', 'erech vs damim', new Date('2026-11-24T09:00:00Z')); // relabel
+  assert.equal(P.getBookmarks(state, arakhin, 5).length, 2);
+  assert.equal(P.findBookmark(state, arakhin, 5, '5a:7').label, 'erech vs damim');
+  assert.equal(P.findBookmark(state, arakhin, 5, '5a:8'), null);
+  assert.deepEqual(P.allBookmarks(state).map((b) => `${b.tractate.en} ${b.daf} ${b.passage}`),
+    ['Arakhin 9 9b:2', 'Arakhin 5 null', 'Arakhin 5 5a:7']);
+  P.removeBookmark(state, arakhin, 5, '5a:7');
+  P.removeBookmark(state, arakhin, 5, null);
+  assert.equal(state.bookmarks['Arakhin 5'], undefined);
+});
+
+test('bookmarks are cleaned up when loaded and combined on import', () => {
+  const loaded = P.normalizeState({
+    bookmarks: {
+      'Arakhin 5': [{ passage: '5a:7', label: 'x', created: '2026-11-22T10:00:00Z' }, { passage: '5a:7', label: 'dup' }, { passage: 'x'.repeat(99) }],
+      'Nowhere 2': [{ passage: null }],
+    },
+  });
+  assert.deepEqual(loaded.bookmarks, { 'Arakhin 5': [{ passage: '5a:7', label: 'x', created: '2026-11-22T10:00:00Z', updated: '2026-11-22T10:00:00Z' }] });
+  const other = P.emptyState();
+  P.setBookmark(other, arakhin, 5, '5a:7', 'newer label', new Date('2026-11-25T00:00:00Z'));
+  P.setBookmark(other, arakhin, 6, null, '', new Date('2026-11-25T00:00:00Z'));
+  const merged = P.mergeStates(loaded, other);
+  assert.equal(P.findBookmark(merged, arakhin, 5, '5a:7').label, 'newer label');
+  assert.ok(P.findBookmark(merged, arakhin, 6, null));
+});
+
+test('recent dafim: newest first, no repeats, keeping the passage you reached', () => {
+  let list = [];
+  list = P.addRecent(list, { index: 1, passage: '2a:4', at: 1 });
+  list = P.addRecent(list, { index: 2, at: 2 });
+  list = P.addRecent(list, { index: 1, at: 3 }); // back to the first: passage kept
+  assert.deepEqual(list, [{ index: 1, passage: '2a:4', at: 3 }, { index: 2, passage: null, at: 2 }]);
+  list = P.addRecent(list, { index: 1, passage: '2b:1', at: 4 });
+  assert.equal(list[0].passage, '2b:1');
+  for (let i = 10; i < 30; i++) list = P.addRecent(list, { index: i, at: i });
+  assert.equal(list.length, P.RECENT_MAX);
 });

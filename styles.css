@@ -97,10 +97,10 @@ p { margin: 0 0 .75rem; }
 .topbar-end { display: flex; align-items: center; gap: .35rem; margin-left: auto; }
 .nav { display: flex; gap: .25rem; }
 
-/* The backup icon and its panel. */
-.sync-indicator { position: relative; }
-.sync-indicator[hidden] { display: none; }
-.sync-button {
+/* Icons in the top bar (bookmarks, backup) and the panels they open. */
+.topbar-popup { position: relative; }
+.topbar-popup[hidden] { display: none; }
+.icon-button {
   display: grid;
   place-items: center;
   width: 2.25rem;
@@ -113,8 +113,9 @@ p { margin: 0 0 .75rem; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.sync-button:hover { background: var(--surface-2); }
-.sync-button svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.icon-button:hover, .icon-button[aria-expanded="true"] { background: var(--surface-2); }
+.icon-button svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+#marks-button { color: var(--accent); }
 .sync-indicator[data-state="saved"] .sync-button { color: var(--learned); }
 .sync-indicator[data-state="pending"] .sync-button,
 .sync-indicator[data-state="syncing"] .sync-button { color: var(--accent); }
@@ -123,22 +124,40 @@ p { margin: 0 0 .75rem; }
 .sync-button .mark-spin { transform-box: view-box; transform-origin: 12px 14px; animation: sync-spin 1s linear infinite; }
 @keyframes sync-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .sync-button .mark-spin { animation: none; } }
-.sync-panel {
+.topbar-panel {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
   z-index: 6;
-  width: min(20rem, calc(100vw - 32px));
+  width: min(22rem, calc(100vw - 32px));
+  max-height: min(75vh, 36rem);
+  overflow: auto;
   padding: .75rem .9rem;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 8px 30px rgb(0 0 0 / 15%);
 }
-.sync-panel[hidden] { display: none; }
+.topbar-panel[hidden] { display: none; }
 .sync-panel p { margin: 0 0 .4rem; }
 .sync-panel-title { font-weight: 700; }
 .sync-panel-actions { display: flex; align-items: center; gap: .75rem; margin-top: .5rem; }
+
+/* Bookmarks and recent. */
+.marks-panel h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: .9rem 0 .35rem; }
+.marks-panel h3:first-child { margin-top: 0; }
+.marks-panel > p { margin: 0; }
+.bookmark-here { width: 100%; justify-content: flex-start; text-align: left; font-size: .9rem; }
+.bookmark-here svg { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.bookmark-here[aria-pressed="true"] svg { fill: currentColor; }
+.marks-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
+.marks-list a { display: grid; gap: .05rem; padding: .4rem .5rem; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 600; }
+.marks-list a:hover, .marks-list a:focus-visible { background: var(--surface-2); }
+.marks-list a .small { font-weight: 400; }
+.bookmark-item { display: flex; align-items: center; gap: .5rem; }
+.bookmark-item a { flex: 1; min-width: 0; }
+.bookmark-label { overflow-wrap: anywhere; }
+.bookmark-actions { display: flex; gap: .6rem; flex: none; }
 
 /* Reading position: a label (and jump menu) in the top bar, and a line along
    its bottom edge that fills as you read. */
@@ -236,6 +255,18 @@ p { margin: 0 0 .75rem; }
 .reading-ticks .tick.is-read { background: var(--learned); }
 .reading-ticks .tick.is-amud { top: 9px; height: 16px; background: var(--accent); }
 .reading-ticks .tick.is-amud.is-read { background: var(--learned); }
+/* A bookmarked passage: a little ribbon above its tick. */
+.reading-ticks .tick.is-bookmarked::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  width: 7px;
+  height: 9px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  transform: translateX(-50%);
+}
 /* A read passage also gets a green dot on the track, so it's easy to spot. */
 .reading-ticks .tick.is-read::after {
   content: "";
@@ -296,8 +327,17 @@ p { margin: 0 0 .75rem; }
 .nav a[aria-current="page"] { color: var(--accent-ink); background: var(--accent); }
 
 @media (max-width: 560px) {
-  .topbar-end { margin-left: 0; width: 100%; }
-  .nav { flex: 1; justify-content: space-between; }
+  /* First row: logo, reading label, the two icons. Second row: the menu. */
+  .topbar-end { display: contents; }
+  .topbar-popup { order: 1; }
+  #marks-indicator { margin-left: .15rem; }
+  .topbar:has(#reading-nav[hidden]) #marks-indicator { margin-left: auto; }
+  .icon-button { width: 2rem; height: 2rem; }
+  .brand-name, .reading-pct { display: none; }
+  /* Panels open across the screen, just below the top bar. */
+  .topbar-popup { position: static; }
+  .topbar-panel { top: calc(100% + 4px); left: 16px; right: 16px; width: auto; }
+  .nav { order: 2; flex: 1 0 100%; justify-content: space-between; }
   .reading-status { padding: .2rem .6rem; font-size: .8rem; }
   .nav a { padding: .35rem .6rem; }
 }
@@ -632,6 +672,33 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   -webkit-tap-highlight-color: transparent;
 }
 .unread-btn[hidden] { display: none; }
+
+/* Bookmark ribbon beside a passage: shown on hover (or faintly on touch
+   screens), and always, filled, once the passage is bookmarked. */
+.bm-btn {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.bm-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.seg-row:hover .bm-btn, .seg-mark:focus-within .bm-btn { opacity: .7; }
+.seg-mark.is-bookmarked .bm-btn { opacity: 1; }
+.seg-mark.is-bookmarked .bm-btn svg { fill: currentColor; }
+@media (hover: none) { .bm-btn { opacity: .35; } }
+
+/* The passage you've just jumped to. */
+.seg-row.is-target { animation: target-flash 2.2s ease-out; }
+@keyframes target-flash { from { background: var(--accent-soft); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .seg-row.is-target { animation: none; outline: 2px solid var(--accent-soft); } }
 .unread-btn:hover { color: var(--danger); }
 .seg-row:hover .unread-btn, .seg-mark:focus-within .unread-btn { opacity: 1; }
 @media (hover: none) { .unread-btn { opacity: .7; } }
