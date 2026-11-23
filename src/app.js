@@ -222,14 +222,16 @@ function dafPage(index, { home }) {
   // Re-draw the cards that depend on what you've learned without touching the
   // text, so marking a daf doesn't lose your place in it.
   function refresh() {
-    if (paceCard) {
-      const next = renderPace();
-      paceCard.replaceWith(next);
-      paceCard = next;
-    }
-    const next = renderHead();
-    headCard.replaceWith(next);
-    headCard = next;
+    keepReadingPlace(() => {
+      if (paceCard) {
+        const next = renderPace();
+        paceCard.replaceWith(next);
+        paceCard = next;
+      }
+      const next = renderHead();
+      headCard.replaceWith(next);
+      headCard = next;
+    });
   }
 
   function renderHead() {
@@ -280,6 +282,32 @@ new ResizeObserver(() => {
 
 const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
+/**
+ * Make a change to the page without moving the passage you're reading:
+ * if you've scrolled into the text, the first passage that starts on screen
+ * stays exactly where it is, even when Rashi or context loads in above it.
+ * Browsers' own "scroll anchoring" does a rougher version of this (and still
+ * covers things like fonts loading), but Safari doesn't have it, and it can
+ * anchor to a passage half off the screen, which then grows when its Rashi
+ * arrives and pushes the passage you're reading down.
+ */
+function keepReadingPlace(change) {
+  const barBottom = topbar.getBoundingClientRect().bottom;
+  const rows = [...document.querySelectorAll('.amud-section .seg-row')];
+  if (!rows.length || rows[0].getBoundingClientRect().top >= barBottom) {
+    change(); // not reading yet: let the text simply move down
+    return;
+  }
+  // The first passage that starts on screen (anything added inside a passage
+  // only grows it downwards), or failing that the one filling the screen.
+  const anchor = rows.find((row) => row.getBoundingClientRect().top >= barBottom)
+    || rows.findLast((row) => row.getBoundingClientRect().top < barBottom);
+  const before = anchor.getBoundingClientRect().top;
+  change();
+  const shift = anchor.getBoundingClientRect().top - before;
+  if (shift) window.scrollBy(0, shift);
+}
+
 function closeReadingMenu() {
   readingMenu.hidden = true;
   readingStatus.setAttribute('aria-expanded', 'false');
@@ -290,26 +318,27 @@ function trackReading(page) {
 
   function update() {
     frame = 0;
-    const body = page.querySelector('.text-body');
-    const rows = [...page.querySelectorAll('.seg-row')];
-    if (!body || !rows.length) {
+    // This daf's own passages (not the context shown from the dafim either side).
+    const rows = [...page.querySelectorAll('.amud-section .seg-row')];
+    if (!rows.length) {
       readingNav.hidden = true;
       readingLine.hidden = true;
       return;
     }
     const barBottom = topbar.getBoundingClientRect().bottom;
-    const rect = body.getBoundingClientRect();
+    const top = rows[0].getBoundingClientRect().top;
+    const height = rows[rows.length - 1].getBoundingClientRect().bottom - top;
 
     // 0% when the text reaches the top bar, 100% when its end comes into view.
-    const range = rect.height - (window.innerHeight - barBottom);
-    const pct = Math.round(Math.min(1, Math.max(0, range > 0 ? (barBottom - rect.top) / range : 1)) * 100);
+    const range = height - (window.innerHeight - barBottom);
+    const pct = Math.round(Math.min(1, Math.max(0, range > 0 ? (barBottom - top) / range : 1)) * 100);
     readingLine.hidden = false;
     readingLine.firstElementChild.style.width = `${pct}%`;
 
     // The passage you're reading: the last one that has started above a line
     // a third of the way down the screen.
     const readAt = barBottom + (window.innerHeight - barBottom) / 3;
-    if (rect.top > readAt) {
+    if (top > readAt) {
       readingNav.hidden = true;
       closeReadingMenu();
       return;
@@ -659,8 +688,10 @@ function textCard(index, { onReadThrough } = {}) {
   let rashiStatus = 'idle'; // idle | loading | done | none
 
   function setRashiNote(...content) {
-    rashiNote.replaceChildren(...content);
-    rashiNote.hidden = !content.length || !settings.rashi;
+    keepReadingPlace(() => {
+      rashiNote.replaceChildren(...content);
+      rashiNote.hidden = !content.length || !settings.rashi;
+    });
   }
 
   async function showRashi() {
@@ -679,11 +710,13 @@ function textCard(index, { onReadThrough } = {}) {
         setRashiNote("There's no Rashi on this daf.");
         return;
       }
-      for (const slot of body.querySelectorAll('.rashi[data-amud]')) {
-        const passages = rashi.byAmud[slot.dataset.amud] || [];
-        const comments = slot.dataset.seg === 'all' ? passages.flat() : passages[Number(slot.dataset.seg)] || [];
-        if (comments.length) slot.replaceChildren(...rashiView(comments));
-      }
+      keepReadingPlace(() => {
+        for (const slot of body.querySelectorAll('.rashi[data-amud]')) {
+          const passages = rashi.byAmud[slot.dataset.amud] || [];
+          const comments = slot.dataset.seg === 'all' ? passages.flat() : passages[Number(slot.dataset.seg)] || [];
+          if (comments.length) slot.replaceChildren(...rashiView(comments));
+        }
+      });
       rashiStatus = 'done';
       setRashiNote();
       rashiCredit.textContent = ` ${rashi.authors.join(' and ')}: ${rashi.versions.join(', ')}.`;
@@ -701,7 +734,7 @@ function textCard(index, { onReadThrough } = {}) {
     onclick: () => {
       settings.rashi = !settings.rashi;
       persist();
-      body.dataset.rashi = settings.rashi ? 'on' : 'off';
+      keepReadingPlace(() => { body.dataset.rashi = settings.rashi ? 'on' : 'off'; });
       rashiButton.setAttribute('aria-pressed', String(settings.rashi));
       scriptButton.hidden = !settings.rashi;
       rashiNote.hidden = !settings.rashi || !rashiNote.childNodes.length;
@@ -719,7 +752,7 @@ function textCard(index, { onReadThrough } = {}) {
     onclick: () => {
       settings.rashiScript = !settings.rashiScript;
       persist();
-      body.dataset.rashiScript = settings.rashiScript ? 'on' : 'off';
+      keepReadingPlace(() => { body.dataset.rashiScript = settings.rashiScript ? 'on' : 'off'; });
       scriptButton.setAttribute('aria-pressed', String(settings.rashiScript));
     },
   }, 'Rashi script');
@@ -734,7 +767,7 @@ function textCard(index, { onReadThrough } = {}) {
     onclick: (event) => {
       settings.layout = value;
       persist();
-      body.dataset.layout = value;
+      keepReadingPlace(() => { body.dataset.layout = value; });
       for (const b of event.currentTarget.parentElement.children) b.setAttribute('aria-pressed', b === event.currentTarget ? 'true' : 'false');
     },
   }, label));
@@ -742,7 +775,7 @@ function textCard(index, { onReadThrough } = {}) {
   const resize = (step) => () => {
     settings.fontScale = Math.min(1.8, Math.max(0.8, Math.round((settings.fontScale + step) * 10) / 10));
     persist();
-    body.style.setProperty('--scale', settings.fontScale);
+    keepReadingPlace(() => body.style.setProperty('--scale', settings.fontScale));
   };
 
   // ---- Reading passages: marks beside each passage, a button on each amud,
@@ -796,7 +829,7 @@ function textCard(index, { onReadThrough } = {}) {
     const before = P.readingSummary(countsIn(body)).times;
     change();
     persist();
-    updateReading();
+    keepReadingPlace(updateReading);
     const after = P.readingSummary(countsIn(body)).times;
     if (after > before) onReadThrough?.(after);
   }
@@ -828,6 +861,24 @@ function textCard(index, { onReadThrough } = {}) {
     }
   });
 
+  // ---- Context: the end of the previous daf above the text and the start of
+  // the next below it, so a sugya that runs across the page isn't cut off.
+  // Read-only, and loaded one at a time after the text and Rashi, to go easy
+  // on Sefaria. Loading the next daf also makes moving on to it instant.
+  async function loadContext() {
+    for (const [near, where] of [[index - 1, 'before'], [index + 1, 'after']]) {
+      if (near < 0 || S.dafAtIndex(near).tractate !== tractate) continue; // not across tractates
+      try {
+        const block = contextView(await loadDaf(near), near, where);
+        if (!block || !body.isConnected || !body.querySelector('.amud-section')) continue;
+        if (where === 'before') keepReadingPlace(() => body.prepend(block));
+        else body.append(block);
+      } catch {
+        // Context is a nicety; if Sefaria won't give it, carry on without.
+      }
+    }
+  }
+
   async function load() {
     body.replaceChildren(h('p', { class: 'loading' }, 'Loading the text from Sefaria…'));
     try {
@@ -835,7 +886,7 @@ function textCard(index, { onReadThrough } = {}) {
       body.replaceChildren(...text.sections.map(sectionView));
       updateReading();
       gemaraShown = true;
-      showRashi();
+      showRashi().finally(loadContext);
       const { he, en } = text.versions;
       credits.replaceChildren(
         'Text from ', h('a', { href: sefariaUrl(text.ref), target: '_blank', rel: 'noopener noreferrer' }, 'Sefaria'),
@@ -876,6 +927,80 @@ function textCard(index, { onReadThrough } = {}) {
   );
 }
 
+function para(html, lang) {
+  return h('p', lang === 'he' ? { lang: 'he', dir: 'rtl' } : { lang: 'en' }, textToFragment(html));
+}
+
+/**
+ * The passages next to the page break from the daf before (its last) or
+ * after (its first): shaded, read-only, and at first only the nearest
+ * passage, cut off with a fade at the far end. "Show more" shows that
+ * passage whole, then adds more passages.
+ */
+const CONTEXT_MORE = 2;
+
+function contextView(text, nearIndex, where) {
+  const section = where === 'before' ? text.sections[text.sections.length - 1] : text.sections[0];
+  if (!section) return null;
+  const { tractate } = S.dafAtIndex(nearIndex);
+  const name = /^\d+[ab]$/.test(section.label) ? `${tractate.en} ${section.label}` : dafName(nearIndex);
+  const label = h('span', {}, where === 'before' ? 'From the end of ' : 'Continues on ', h('a', { href: dafHref(nearIndex) }, name));
+  const row = (he, en) => h('div', { class: 'seg-row context-row' },
+    h('div', { class: 'seg-content' }, h('div', { class: 'he' }, he), h('div', { class: 'en' }, en)));
+  const list = h('div', { class: 'context-rows is-clipped' });
+  const more = h('button', { type: 'button', class: 'link-button' }, 'Show more');
+
+  // Passages as [Hebrew, English]; if the languages don't line up passage by
+  // passage, the whole amud is one.
+  const paired = section.he.length === section.en.length;
+  const passages = paired
+    ? section.he.map((he, i) => [[he], [section.en[i]]]).filter(([[he], [en]]) => he || en)
+    : [[section.he, section.en]];
+  let shown = 0;
+
+  function add(count) {
+    const next = Math.min(passages.length, shown + count);
+    const rows = (where === 'before'
+      ? passages.slice(passages.length - next, passages.length - shown)
+      : passages.slice(shown, next)).map(([he, en]) => row(he.map((t) => para(t, 'he')), en.map((t) => para(t, 'en'))));
+    if (where === 'before') list.prepend(...rows);
+    else list.append(...rows);
+    shown = next;
+  }
+
+  const clipped = () => list.classList.contains('is-clipped');
+  const refreshButton = () => { more.hidden = !clipped() && shown >= passages.length; };
+  more.addEventListener('click', () => {
+    if (clipped()) list.classList.remove('is-clipped');
+    else add(CONTEXT_MORE);
+    refreshButton();
+  });
+  add(1);
+
+  // A short passage may fit without cutting off; then there's nothing to fade.
+  const fit = new ResizeObserver(() => {
+    if (!clipped()) {
+      fit.disconnect();
+      return;
+    }
+    const content = [...list.children].reduce((sum, child) => sum + child.getBoundingClientRect().height, 0);
+    if (list.clientHeight && content <= list.clientHeight + 1) {
+      keepReadingPlace(() => list.classList.remove('is-clipped'));
+      refreshButton();
+      fit.disconnect();
+    }
+  });
+  fit.observe(list);
+  refreshButton();
+
+  // Earlier passages appear above, so "Show more" goes at the top before the
+  // daf, and at the bottom after it.
+  const block = h('section', { class: `context context-${where}`, 'aria-label': `${name}, for context` });
+  if (where === 'before') block.append(h('div', { class: 'context-head small' }, label, more), list);
+  else block.append(h('div', { class: 'context-head small' }, label), list, h('div', { class: 'context-foot small' }, more));
+  return block;
+}
+
 function sectionView(section) {
   const he = amudLabelHe(section.label);
   const heading = h('div', { class: 'amud' },
@@ -896,7 +1021,6 @@ function sectionView(section) {
   h('button', { type: 'button', class: 'read-btn' }),
   h('button', { type: 'button', class: 'unread-btn', 'aria-label': 'Take back one read', title: 'Take back one read', hidden: true }, '−'));
   const row = (n, ...cells) => h('div', { class: 'seg-row' }, mark(n), h('div', { class: 'seg-content' }, cells));
-  const para = (html, lang) => h('p', lang === 'he' ? { lang: 'he', dir: 'rtl' } : { lang: 'en' }, textToFragment(html));
 
   // When both languages have the same number of passages, line them up side
   // by side; otherwise show each language as one block.

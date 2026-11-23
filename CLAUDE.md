@@ -17,3 +17,7 @@ the change is tested (tests pass and it's been checked in a browser), without as
 - Sefaria rate-limits (HTTP 429); avoid bursts of requests.
 - Rashi ("Rashi on Arakhin 5") is split into the same passages as the Gemara: comment list n on 5a belongs to passage n of
   5a. Bava Batra adds "Rashbam on Bava Batra"; Shekalim, Kinnim, Tamid and Middot have no Rashi.
+- Anything added or resized above the passage being read (Rashi, context, the summary, the head card, layout changes)
+  must go through `keepReadingPlace()` in `src/app.js`, so the reader's place on screen doesn't move.
+- Context from the neighbouring dafim (`.context-row`) sits outside `.amud-section`: no read marks, and the reading
+  position only counts `.amud-section .seg-row`.
