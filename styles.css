@@ -1038,3 +1038,34 @@ textarea { width: 100%; resize: vertical; line-height: 1.5; }
   word-break: break-all;
   user-select: all;
 }
+
+/* ---- The menu right-click opens on a passage ----------------------------- */
+
+.ctx-menu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 14rem;
+  padding: .3rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 20%);
+}
+.ctx-title { margin: .2rem .6rem .3rem; font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.ctx-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: .45rem .6rem;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: .95rem;
+  text-align: left;
+  cursor: pointer;
+}
+.ctx-item:hover, .ctx-item:focus-visible { background: var(--surface-2); outline: none; }
