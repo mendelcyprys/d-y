@@ -4,7 +4,7 @@ daf: Arakhin 4a
 topic: Ben Buchri and "הכל מעריכין — כהנים": chullin in the Azarah, and why shekalim say nothing about arachin
 asked: 2026-11-23
 updated: 2026-11-23
-status: partly answered
+status: answered
 ---
 
 # Arakhin 4a: the Ben Buchri passage
@@ -138,6 +138,48 @@ were separate: "דשלש תרומות היו... ובאותה של האדנים �
 **Not checked.** Whether anyone raises the women-and-slaves question (a). The
 Yerushalmi on Shekalim 1:4 and its commentators (Sirilio, Penei Moshe). The
 rest of the Darkhei Moshe chapter.
+
+## 3. Does anyone raise the women-and-slaves question from 2(a)? (2026-11-23)
+
+**Answer.** I did not find anyone who raises it in terms of arachin. I checked
+the Sha'ar HaMelech, R' Amiel, the Minchas Chinuch (292), the Lechem Shamayim
+on Shekalim 1:4, the Yerushalmi on Shekalim 1:3–4, and Sirilio, Penei Moshe,
+Ridbaz and Sheyarei Korban there. But two lines of thought bear on it.
+
+**(a) Do women who give become partners?** The **Ma'asai LaMelech**, on Rambam
+Hilchos Beis HaBechirah 1:12, holds that women's exemption from shekalim is
+not learned from a verse. It follows from the communal korbanos being a
+time-bound mitzvah. So women may take the obligation on themselves:
+> ואולם נראה דהנה י"ל דהא דנשים פטורות משקלים לא מקרא נתמעט דאף דכתיב בקרא איש כופר נפשו אתי למעט קטן ורק הא דנשים אין שוקלים הוא מטעם דשקלים הוא כדי להביא ק"צ שהם ממ"ע שהז"ג
+
+and:
+> ומזה מוכח דבאמת גם בנשים אם שקלו מקבלין מהם אין הכונה בתורת מסירה לציבור אלא שעולה להם השקלים לשמן ג"כ ויש להם חלק בקרבנות ציבור
+
+*Applying this to our sugya (my own step):* together with R' Amiel's analysis
+(2b), a woman who gives is a **partner**, so she is "in shekalim". A kohen,
+according to Ben Buchri, can only hand the coin over and drop out. Rava's
+comparison would then exclude kohanim but not women. The Ma'asai LaMelech
+himself does not mention arachin.
+
+**(b) On the other view the question stands.** Bartenura and the Tosafos Yom
+Tov on Shekalim 1:5, and the **Minchas Chinuch**, hold that women and slaves
+must also hand the coin over. The Minchas Chinuch ties this to our Gemara:
+> וזה מבואר בהדיא במנחות פ' הקומץ דכ"א ובערכין פ"ק דמקשה שם לבן בוכרי דפוטר הכהנים משקלים אך אם הביא אינו חוטא ומקשה התם למה אינו חוטא הא קמייתי חולין בעזרה ומשני כשמסרו לצבור אם כן בנשים ועבדים ג"כ הקושיא הנ"ל וצריך מסירה לצבור
+
+On that view women and slaves are in exactly the kohen's position, and the
+question in 2(a) remains.
+
+**(c) A suggestion of my own,** close to the Sha'ar HaMelech's answer about
+those under twenty. The comparison "כל דאיתיה בשקלים" may only speak about
+the people the shekel parsha addresses, grown men. A man taken out of it (a
+kohen, according to Ben Buchri) might be thought taken out of arachin too.
+Women are not in that parsha at all, and arachin includes them by its own
+verses: "ואם נקבה היא", and "אשה שהעריכה... ת"ל נפשות" in the Sifra and
+baraisa on 4a–4b (see [arakhin-4a-bearkecha-sifra.md](arakhin-4a-bearkecha-sifra.md)).
+This does not yet explain slaves.
+
+**Not checked.** Whether anyone develops (c). Other later writers on
+Shekalim 1:5 (women's half-shekel).
 
 ## Corrections
 
