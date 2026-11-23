@@ -27,12 +27,18 @@
       <button type="button" class="reading-status" id="reading-status" aria-haspopup="true" aria-expanded="false"></button>
       <div class="reading-menu" id="reading-menu" hidden></div>
     </div>
-    <nav class="nav" aria-label="Main">
-      <a href="#/" data-nav="learn">Learn</a>
-      <a href="#/progress" data-nav="progress">Progress</a>
-      <a href="#/notes" data-nav="notes">Notes</a>
-      <a href="#/schedule" data-nav="schedule">Schedule</a>
-    </nav>
+    <div class="topbar-end">
+      <nav class="nav" aria-label="Main">
+        <a href="#/" data-nav="learn">Learn</a>
+        <a href="#/progress" data-nav="progress">Progress</a>
+        <a href="#/notes" data-nav="notes">Notes</a>
+        <a href="#/schedule" data-nav="schedule">Schedule</a>
+      </nav>
+      <div class="sync-indicator" id="sync-indicator" hidden>
+        <button type="button" class="sync-button" id="sync-button" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="sync-panel" id="sync-panel" hidden></div>
+      </div>
+    </div>
     <div class="reading-bar" id="reading-bar" hidden role="slider" tabindex="0" aria-label="Position in the daf"
          title="Tap or drag to move through the daf">
       <div class="reading-labels"></div>

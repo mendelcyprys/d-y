@@ -53,8 +53,10 @@ behind.
 free account (a username and password) and your progress, reads and notes
 back up automatically, a few seconds after each change. Log in on your phone
 and computer and they stay in step. Each backup sends only the dafim that
-changed, so it stays small however much you learn. When you sign up you get a
-recovery code: keep it, it's the only way back in if you forget your
+changed, so it stays small however much you learn. A cloud icon in the top bar shows whether everything is backed up
+(a green tick), there are changes waiting (an orange dot), it's saving, or
+you're offline; tap it to see which dafim are waiting. When you sign up you
+get a recovery code: keep it, it's the only way back in if you forget your
 password. Display settings (layout, text width, Rashi) stay with each device.
 The backup service is in `worker/` and runs on a free Cloudflare account. You
 can also export a backup file and import it elsewhere.

@@ -94,7 +94,51 @@ p { margin: 0 0 .75rem; }
 .brand-mark { font-family: var(--font-he); font-weight: 700; font-size: 1.35rem; color: var(--accent); }
 .brand-name { font-weight: 650; letter-spacing: .01em; }
 
-.nav { display: flex; gap: .25rem; margin-left: auto; }
+.topbar-end { display: flex; align-items: center; gap: .35rem; margin-left: auto; }
+.nav { display: flex; gap: .25rem; }
+
+/* The backup icon and its panel. */
+.sync-indicator { position: relative; }
+.sync-indicator[hidden] { display: none; }
+.sync-button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sync-button:hover { background: var(--surface-2); }
+.sync-button svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.sync-indicator[data-state="saved"] .sync-button { color: var(--learned); }
+.sync-indicator[data-state="pending"] .sync-button,
+.sync-indicator[data-state="syncing"] .sync-button { color: var(--accent); }
+.sync-indicator[data-state="error"] .sync-button { color: var(--danger); }
+.sync-button .mark-dot { fill: var(--accent); stroke: var(--bg); stroke-width: 1.5; }
+.sync-button .mark-spin { transform-box: view-box; transform-origin: 12px 14px; animation: sync-spin 1s linear infinite; }
+@keyframes sync-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sync-button .mark-spin { animation: none; } }
+.sync-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  width: min(20rem, calc(100vw - 32px));
+  padding: .75rem .9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 15%);
+}
+.sync-panel[hidden] { display: none; }
+.sync-panel p { margin: 0 0 .4rem; }
+.sync-panel-title { font-weight: 700; }
+.sync-panel-actions { display: flex; align-items: center; gap: .75rem; margin-top: .5rem; }
 
 /* Reading position: a label (and jump menu) in the top bar, and a line along
    its bottom edge that fills as you read. */
@@ -252,7 +296,8 @@ p { margin: 0 0 .75rem; }
 .nav a[aria-current="page"] { color: var(--accent-ink); background: var(--accent); }
 
 @media (max-width: 560px) {
-  .nav { margin-left: 0; width: 100%; justify-content: space-between; }
+  .topbar-end { margin-left: 0; width: 100%; }
+  .nav { flex: 1; justify-content: space-between; }
   .reading-status { padding: .2rem .6rem; font-size: .8rem; }
   .nav a { padding: .35rem .6rem; }
 }
