@@ -1,44 +1,45 @@
-// The Daf Yomi backup service: a Cloudflare Worker with one Durable Object
-// per sync key. A Durable Object handles one request at a time, so checking
-// the revision and saving happen together and two devices can't overwrite
-// each other's changes.
+// The Daf Yomi backup service: a Cloudflare Worker with two kinds of Durable
+// Object, one holding all accounts and one per account holding its backup.
+// A Durable Object handles one request at a time, which is what makes
+// "save only if nobody else has changed this since" reliable.
 
 import { DurableObject } from 'cloudflare:workers';
-import { handle, sha256Hex } from './handler.js';
+import { handle } from './handler.js';
+import { durableObjectDb } from './db.js';
+import { accounts } from './accounts.js';
+import { userStore } from './store.js';
 
-export class SyncStore extends DurableObject {
+export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.sql = ctx.storage.sql;
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS backup (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      rev INTEGER NOT NULL,
-      updated TEXT NOT NULL,
-      data TEXT NOT NULL
-    )`);
+    this.api = accounts(durableObjectDb(ctx.storage.sql));
   }
 
-  read() {
-    const row = this.sql.exec('SELECT rev, updated, data FROM backup WHERE id = 1').toArray()[0];
-    return row ? { rev: row.rev, updated: row.updated, data: JSON.parse(row.data) } : { rev: 0, updated: null, data: null };
+  signup(username, password, address) { return this.api.signup(username, password, address); }
+  login(username, password, address) { return this.api.login(username, password, address); }
+  verify(token) { return this.api.verify(token); }
+  logout(token) { return this.api.logout(token); }
+  recover(username, code, newPassword) { return this.api.recover(username, code, newPassword); }
+  changePassword(userId, password, newPassword) { return this.api.changePassword(userId, password, newPassword); }
+  deleteAccount(userId, password) { return this.api.deleteAccount(userId, password); }
+}
+
+export class UserStore extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.api = userStore(durableObjectDb(ctx.storage.sql));
   }
 
-  write(baseRev, dataText) {
-    const current = this.sql.exec('SELECT rev FROM backup WHERE id = 1').toArray()[0]?.rev ?? 0;
-    if (current !== baseRev) return { conflict: true, ...this.read() };
-    const rev = current + 1;
-    const updated = new Date().toISOString();
-    this.sql.exec(
-      `INSERT INTO backup (id, rev, updated, data) VALUES (1, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET rev = excluded.rev, updated = excluded.updated, data = excluded.data`,
-      rev, updated, dataText,
-    );
-    return { rev, updated };
-  }
+  changes(since) { return this.api.changes(since); }
+  write(items) { return this.api.write(items); }
+  deleteAll() { return this.api.deleteAll(); }
 }
 
 export default {
-  async fetch(request, env) {
-    return handle(request, env, async (key) => env.SYNC_STORE.get(env.SYNC_STORE.idFromName(await sha256Hex(key))));
+  fetch(request, env) {
+    return handle(request, env, {
+      accounts: () => env.ACCOUNTS.get(env.ACCOUNTS.idFromName('accounts')),
+      store: (userId) => env.USER_STORE.get(env.USER_STORE.idFromName(userId)),
+    });
   },
 };

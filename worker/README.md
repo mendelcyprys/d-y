@@ -1,19 +1,28 @@
 # Daf Yomi backup service
 
-A small Cloudflare Worker that keeps an automatic backup of the app's record
-(start, learned dafim, notes, passage reads) and lets several devices stay in
-step. It runs on the owner's own Cloudflare account, well inside the free plan.
+A small Cloudflare Worker that holds accounts and keeps each account's
+record (start, learned dafim, notes, passage reads) backed up, so the app
+can keep several devices in step. It runs on the owner's Cloudflare account,
+well inside the free plan.
 
-- One Durable Object per sync key, holding the latest backup and a revision
-  number in SQLite. A Durable Object handles one request at a time, so "save
-  only if nobody else has saved since revision N" is reliable.
-- The sync key is a long random code made by the app and shared between
-  devices with a link. Only a SHA-256 hash of it is used to find the backup.
-- Browsers may only call it from the origins in `ALLOWED_ORIGINS`
-  (`wrangler.toml`).
+- **Accounts** (`src/accounts.js`, one Durable Object for all of them):
+  usernames and passwords (stored as PBKDF2-SHA256 hashes with a random
+  salt), session tokens (only their hashes are stored; they last a year from
+  last use), and a recovery code per account for resetting a forgotten
+  password. Repeated failed attempts are slowed down.
+- **Backups** (`src/store.js`, one Durable Object per account): the record in
+  pieces, one per daf plus the starting point, each with the revision at
+  which it was last saved. The app fetches only pieces changed since its
+  last revision and sends only pieces it changed. A save names the revision
+  each piece was based on; a piece someone else changed since is sent back
+  instead, for the app to combine and resend. A Durable Object handles one
+  request at a time, which makes this reliable.
+- **The API** is in `src/handler.js`. Browsers may only call it from the
+  origins in `ALLOWED_ORIGINS` (`wrangler.toml`).
 
-The API and its rules are in `src/handler.js` (tested by `test/worker.test.js`
-in the main project); `src/index.js` adds the Durable Object.
+All of this is tested in Node, on Node's built-in SQLite, by the main
+project's `npm test` (see `test/server.js`); `src/index.js` only adds the
+Durable Objects.
 
 ## Running and deploying
 
@@ -33,4 +42,6 @@ template, and the account ID:
 CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy
 ```
 
-The app finds the service at the address in `src/config.js`.
+Changing a Durable Object class (adding, renaming or removing one) needs a
+new `[[migrations]]` entry in `wrangler.toml`. The app finds the service at
+the address in `src/config.js`.
