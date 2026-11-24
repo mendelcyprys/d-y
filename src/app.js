@@ -157,6 +157,89 @@ function syncStatusText(status) {
   }
 }
 
+// ---- Light or dark: follow the device, or choose. Kept on each device.
+
+const THEMES = [
+  ['auto', 'Match device', 'Light or dark, as your phone or computer is set'],
+  ['light', 'Light', null],
+  ['dark', 'Dark', null],
+];
+const themeIndicator = document.getElementById('theme-indicator');
+const themeButton = document.getElementById('theme-button');
+const themePanel = document.getElementById('theme-panel');
+const themeColorMetas = [...document.querySelectorAll('meta[name="theme-color"]')];
+const themeColors = themeColorMetas.map((m) => m.content); // [light, dark]
+
+function themeIcon(theme) {
+  const marks = {
+    light: [svg('circle', { cx: '12', cy: '12', r: '4' }),
+      ...[0, 45, 90, 135, 180, 225, 270, 315].map((a) => svg('path', { d: 'M12 3.2v2.2', transform: `rotate(${a} 12 12)` }))],
+    dark: [svg('path', { d: 'M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1Z' })],
+    auto: [svg('circle', { cx: '12', cy: '12', r: '7.5' }), svg('path', { class: 'fill', d: 'M12 4.5a7.5 7.5 0 0 1 0 15Z' })],
+  };
+  return svg('svg', { viewBox: '0 0 24 24', width: '22', height: '22', 'aria-hidden': 'true' }, ...marks[theme]);
+}
+
+function applyTheme() {
+  const theme = state.settings.theme || 'auto';
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  // The colour of the browser's own bar around the page, on phones.
+  themeColorMetas.forEach((meta, i) => {
+    meta.content = theme === 'auto' ? themeColors[i] : themeColors[theme === 'dark' ? 1 : 0];
+  });
+  const label = THEMES.find(([t]) => t === theme)[1];
+  themeButton.replaceChildren(themeIcon(theme));
+  themeButton.setAttribute('aria-label', `Appearance: ${label}`);
+  themeButton.title = `Appearance: ${label}`;
+}
+
+function closeThemePanel() {
+  themePanel.hidden = true;
+  themeButton.setAttribute('aria-expanded', 'false');
+}
+
+function drawThemePanel() {
+  const current = state.settings.theme || 'auto';
+  themePanel.replaceChildren(
+    h('p', { class: 'theme-title' }, 'Appearance'),
+    h('div', { class: 'theme-options', role: 'group', 'aria-label': 'Appearance' },
+      THEMES.map(([theme, label, sub]) => h('button', {
+        type: 'button',
+        class: 'theme-option',
+        'aria-pressed': String(theme === current),
+        onclick: () => {
+          state.settings.theme = theme;
+          persistSettings();
+          applyTheme();
+          drawThemePanel();
+        },
+      }, themeIcon(theme), h('span', {}, h('span', {}, label), sub ? h('span', { class: 'small' }, sub) : null)))),
+    h('p', { class: 'small' }, 'Kept on this device.'),
+  );
+}
+
+themeButton.addEventListener('click', () => {
+  if (!themePanel.hidden) {
+    closeThemePanel();
+    return;
+  }
+  closeMarksPanel();
+  closeSyncPanel();
+  drawThemePanel();
+  themePanel.hidden = false;
+  themeButton.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('click', (event) => {
+  if (!event.composedPath().includes(themeIndicator)) closeThemePanel();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !themePanel.hidden) {
+    closeThemePanel();
+    themeButton.focus();
+  }
+});
+
 // ---- Bookmarks, and the bookmarks-and-recent panel in the top bar.
 
 function noteIcon() {
@@ -276,6 +359,7 @@ marksButton.addEventListener('click', () => {
     return;
   }
   closeSyncPanel();
+  closeThemePanel();
   drawMarksPanel();
   marksPanel.hidden = false;
   marksButton.setAttribute('aria-expanded', 'true');
@@ -504,6 +588,7 @@ syncButton.addEventListener('click', () => {
     return;
   }
   closeMarksPanel();
+  closeThemePanel();
   drawSyncPanel();
   syncPanel.hidden = false;
   syncButton.setAttribute('aria-expanded', 'true');
@@ -2493,5 +2578,6 @@ function schedulePage() {
 // ---------------------------------------------------------------------------
 
 updateStorageWarning();
+applyTheme();
 render();
 sync.start();

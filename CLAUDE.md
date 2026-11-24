@@ -49,5 +49,8 @@ The backup service's `ALLOWED_ORIGINS` (`worker/wrangler.toml`) must list every 
   reading line while the rest of the page loads, until the reader scrolls or taps).
 - A new kind of piece needs the backup service to accept its key (`ITEM_KEY` in `worker/src/handler.js`): deploy the
   service before merging the app change.
+- Colours are CSS variables on `:root`; the dark set applies under `prefers-color-scheme: dark` unless
+  `<html data-theme="light">`, and always with `data-theme="dark"`. `settings.theme` (`auto`/`light`/`dark`) is applied
+  by an inline script in `index.html` before the first paint, and by `applyTheme()`.
 - Save record changes with `persist()` (it tells the backup); save display-setting changes with `persistSettings()`, so
   the backup icon doesn't show unsaved changes that aren't backed up anyway.

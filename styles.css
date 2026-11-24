@@ -25,8 +25,10 @@
   color-scheme: light;
 }
 
+/* Dark colours: when the device asks for them (unless Light is chosen in the
+   app), or when Dark is chosen in the app. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #17140f;
     --surface: #211d17;
     --surface-2: #2a251d;
@@ -44,6 +46,25 @@
     --shadow: none;
     color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17140f;
+  --surface: #211d17;
+  --surface-2: #2a251d;
+  --ink: #eee7da;
+  --muted: #ab9f8f;
+  --line: #3a3328;
+  --accent: #e59a6b;
+  --accent-ink: #1b120c;
+  --accent-soft: #3d2a1f;
+  --learned: #6cc68f;
+  --learned-soft: #1f3a2a;
+  --today: #7cb6e0;
+  --due: #4a3d1e;
+  --danger: #ff8a80;
+  --shadow: none;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -116,6 +137,32 @@ p { margin: 0 0 .75rem; }
 .icon-button:hover, .icon-button[aria-expanded="true"] { background: var(--surface-2); }
 .icon-button svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
 #marks-button { color: var(--accent); }
+#theme-button svg .fill { fill: currentColor; stroke: none; }
+
+/* Appearance panel. */
+.theme-panel { width: min(17rem, calc(100vw - 32px)); }
+.theme-title { margin: 0 0 .4rem; font-weight: 700; }
+.theme-options { display: grid; gap: .25rem; }
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .5rem .6rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.theme-option > span { display: grid; }
+.theme-option svg { flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.theme-option svg .fill { fill: currentColor; stroke: none; }
+.theme-option:hover { background: var(--surface-2); }
+.theme-option[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.theme-option[aria-pressed="true"] .small { color: var(--accent); }
+.theme-panel > .small { margin: .5rem 0 0; }
 .sync-indicator[data-state="saved"] .sync-button { color: var(--learned); }
 .sync-indicator[data-state="pending"] .sync-button,
 .sync-indicator[data-state="syncing"] .sync-button { color: var(--accent); }
@@ -342,10 +389,11 @@ p { margin: 0 0 .75rem; }
 
 @media (max-width: 560px) {
   /* First row: logo, reading label, the two icons. Second row: the menu. */
+  .topbar { column-gap: .4rem; }
   .topbar-end { display: contents; }
   .topbar-popup { order: 1; }
-  #marks-indicator { margin-left: .15rem; }
-  .topbar:has(#reading-nav[hidden]) #marks-indicator { margin-left: auto; }
+  #theme-indicator { margin-left: .15rem; }
+  .topbar:has(#reading-nav[hidden]) #theme-indicator { margin-left: auto; }
   .icon-button { width: 2rem; height: 2rem; }
   .brand-name, .reading-pct { display: none; }
   /* Panels open across the screen, just below the top bar. */
