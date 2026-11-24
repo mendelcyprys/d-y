@@ -7,6 +7,14 @@
   <meta name="description" content="Learn the daily daf at your own pace: the text, your notes, your progress and a plan to catch up.">
   <meta name="theme-color" content="#faf6ee" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)">
+  <script>
+    // Light or dark as chosen in the app, set before anything is drawn so
+    // the page doesn't flash the other colours while it loads.
+    try {
+      const theme = JSON.parse(localStorage.getItem('daf-yomi:v1'))?.settings?.theme;
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="manifest" href="manifest.webmanifest">
@@ -34,6 +42,10 @@
         <a href="#/notes" data-nav="notes">Notes</a>
         <a href="#/schedule" data-nav="schedule">Schedule</a>
       </nav>
+      <div class="topbar-popup" id="theme-indicator">
+        <button type="button" class="icon-button" id="theme-button" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="topbar-panel theme-panel" id="theme-panel" hidden></div>
+      </div>
       <div class="topbar-popup" id="marks-indicator">
         <button type="button" class="icon-button" id="marks-button" aria-haspopup="true" aria-expanded="false"
                 aria-label="Bookmarks and recent dafim" title="Bookmarks and recent dafim">

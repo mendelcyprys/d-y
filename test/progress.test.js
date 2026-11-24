@@ -127,7 +127,9 @@ test('saved state is cleaned up when loaded', () => {
   assert.equal(state.start, null);
   assert.deepEqual(Object.keys(state.learned), ['14/Arakhin/2']);
   assert.deepEqual(Object.keys(state.notes), ['Arakhin 2']);
-  assert.deepEqual(state.settings, { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null });
+  assert.deepEqual(state.settings, { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null, theme: 'auto' });
+  assert.equal(P.normalizeState({ settings: { theme: 'dark' } }).settings.theme, 'dark');
+  assert.equal(P.normalizeState({ settings: { theme: 'purple' } }).settings.theme, 'auto');
   assert.equal(P.normalizeState({ settings: { rashiView: 'buttons' } }).settings.rashiView, 'buttons');
   assert.equal(P.normalizeState({ settings: { rashiView: 'sideways' } }).settings.rashiView, 'shown');
   assert.deepEqual(state.bookmarks, {});

@@ -50,6 +50,9 @@ behind.
   passages are marked on the reading bar. Bookmarks and Recent back up with
   your account, so you can stop on your phone and pick up on your computer
   at the same passage.
+- **Light or dark.** The appearance button in the top bar (a half-circle,
+  sun or moon) chooses Match device, Light or Dark, remembered on each
+  device.
 - **Copy a passage.** Right-click a passage (or long-press on Android) to
   copy it: Hebrew and English, either one, with its Rashi, or a link straight
   to it. Pasted into a document it keeps its bold and Hebrew direction. With

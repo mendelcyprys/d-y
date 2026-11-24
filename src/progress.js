@@ -13,7 +13,7 @@
 //     passageNotes: { 'Arakhin 2': { '2a:7': { text: '...', updated } } },  // notes on single passages
 //     recent: [{ index, passage, at }],  // dafim you spent time on lately, newest first
 //     settings: { layout: 'both' | 'he' | 'en', fontScale: 1, rashi: true, rashiScript: false,
-//                 rashiView: 'shown' | 'buttons',
+//                 rashiView: 'shown' | 'buttons', theme: 'auto' | 'light' | 'dark',
 //                 textWidth: null | pixels }
 //   }
 //
@@ -41,7 +41,7 @@ export function emptyState() {
     bookmarks: {},
     passageNotes: {},
     recent: [],
-    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null },
+    settings: { layout: 'both', fontScale: 1, rashi: true, rashiScript: false, rashiView: 'shown', textWidth: null, theme: 'auto' },
   };
 }
 
@@ -488,6 +488,7 @@ export function normalizeState(raw) {
   if (typeof settings.rashi === 'boolean') state.settings.rashi = settings.rashi;
   if (typeof settings.rashiScript === 'boolean') state.settings.rashiScript = settings.rashiScript;
   if (settings.rashiView === 'shown' || settings.rashiView === 'buttons') state.settings.rashiView = settings.rashiView;
+  if (['auto', 'light', 'dark'].includes(settings.theme)) state.settings.theme = settings.theme;
   const width = Number(settings.textWidth);
   if (settings.textWidth != null && width >= MIN_TEXT_WIDTH && width <= 6000) state.settings.textWidth = Math.round(width);
 
